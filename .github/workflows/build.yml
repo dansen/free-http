@@ -43,11 +43,94 @@ jobs:
                    --noconfirm `
                    src/main.py
         
+    - name: Install WiX Toolset
+      run: |
+        $wixUrl = "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip"
+        $wixZip = "wix311-binaries.zip"
+        Invoke-WebRequest -Uri $wixUrl -OutFile $wixZip
+        Expand-Archive $wixZip -DestinationPath wix
+        $env:PATH += ";$pwd\wix"
+        
+    - name: Create WiX source file
+      run: |
+        @"
+        <?xml version='1.0' encoding='windows-1252'?>
+        <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+          <Product Name='FreeHttp' 
+                   Manufacturer='dansen'
+                   Id='*'
+                   UpgradeCode='12345678-1234-1234-1234-123456789012'
+                   Language='1033' 
+                   Codepage='1252' 
+                   Version='1.0.0'>
+            <Package Id='*'
+                     Keywords='Installer'
+                     Description='FreeHttp Installer'
+                     Comments='FreeHttp is a simple HTTP client'
+                     Manufacturer='dansen'
+                     InstallerVersion='100'
+                     Languages='1033'
+                     Compressed='yes'
+                     SummaryCodepage='1252' />
+            
+            <Media Id='1' Cabinet='FreeHttp.cab' EmbedCab='yes' />
+            
+            <Directory Id='TARGETDIR' Name='SourceDir'>
+              <Directory Id='ProgramFilesFolder' Name='PFiles'>
+                <Directory Id='INSTALLDIR' Name='FreeHttp'>
+                  <Component Id='MainExecutable' Guid='12345678-1234-1234-1234-123456789013'>
+                    <File Id='FreeHttpEXE'
+                          Name='FreeHttp.exe'
+                          DiskId='1'
+                          Source='dist/FreeHttp.exe'
+                          KeyPath='yes'>
+                      <Shortcut Id='startmenuFreeHttp'
+                               Directory='ProgramMenuDir'
+                               Name='FreeHttp'
+                               WorkingDirectory='INSTALLDIR'
+                               Icon='FreeHttp.exe'
+                               IconIndex='0'
+                               Advertise='yes' />
+                    </File>
+                  </Component>
+                </Directory>
+              </Directory>
+              
+              <Directory Id='ProgramMenuFolder' Name='Programs'>
+                <Directory Id='ProgramMenuDir' Name='FreeHttp'>
+                  <Component Id='ProgramMenuDir' Guid='12345678-1234-1234-1234-123456789014'>
+                    <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
+                    <RegistryValue Root='HKCU'
+                                 Key='Software\[Manufacturer]\[ProductName]'
+                                 Type='string'
+                                 Value=''
+                                 KeyPath='yes' />
+                  </Component>
+                </Directory>
+              </Directory>
+            </Directory>
+
+            <Feature Id='Complete' Level='1'>
+              <ComponentRef Id='MainExecutable' />
+              <ComponentRef Id='ProgramMenuDir' />
+            </Feature>
+            
+            <Icon Id='FreeHttp.exe' SourceFile='dist/FreeHttp.exe' />
+          </Product>
+        </Wix>
+        "@ | Out-File -Encoding UTF8 FreeHttp.wxs
+        
+    - name: Build MSI
+      run: |
+        candle FreeHttp.wxs
+        light -ext WixUIExtension FreeHttp.wixobj
+        
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
         files: |
           dist/FreeHttp.exe
+          FreeHttp.msi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
