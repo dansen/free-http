@@ -1,5 +1,10 @@
 name: Build Executable
 
+# 添加权限配置
+permissions:
+  contents: write    # 允许创建 release 和上传文件
+  packages: read    # 允许下载包
+
 on:
   push:
     tags:
