@@ -22,15 +22,15 @@ class ResponsePanel(QWidget):
         
     def update_response(self, response):
         if response:
-            self.status_label.setText(f"Status: {response.status_code}")
+            self.status_label.setText(f"Status: {response['status']}")
             try:
                 # 尝试格式化 JSON 响应
-                json_response = json.loads(response.text)
+                json_response = json.loads(response['text'])
                 formatted_response = json.dumps(json_response, indent=2, ensure_ascii=False)
                 self.response_text.setText(formatted_response)
             except:
                 # 如果不是 JSON 格式，直接显示原文
-                self.response_text.setText(response.text)
+                self.response_text.setText(response['text'])
         else:
             self.status_label.setText("Status: Error")
             self.response_text.setText("请求失败，请检查网络连接或URL是否正确") 
