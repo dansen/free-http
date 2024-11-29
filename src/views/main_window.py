@@ -31,8 +31,14 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.icon_sidebar)
         
         # 创建分割器
-        splitter = QSplitter(Qt.Orientation.Horizontal)
-        main_layout.addWidget(splitter)
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.setHandleWidth(1)  # 设置分割线宽度为1像素
+        self.splitter.setStyleSheet("""
+            QSplitter::handle {
+                background: #CCCCCC;
+            }
+        """)
+        main_layout.addWidget(self.splitter)
         
         # 创建内容切换区域
         self.content_stacked_widget = QStackedWidget()
@@ -65,8 +71,8 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(self.response_panel)
         
         # 将内容区域和右侧面板添加到分割器
-        splitter.addWidget(self.content_stacked_widget)
-        splitter.addWidget(right_widget)
+        self.splitter.addWidget(self.content_stacked_widget)
+        self.splitter.addWidget(right_widget)
         
         # 连接图标侧边栏信号
         self.icon_sidebar.api_list_clicked.connect(self.show_api_list)
@@ -121,3 +127,9 @@ class MainWindow(QMainWindow):
         x = geometry.x() + (geometry.width() - self.loading_spinner.width()) // 2
         y = geometry.y() + (geometry.height() - self.loading_spinner.height()) // 2
         self.loading_spinner.move(x, y)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        # 设置分割器初始大小
+        total_width = self.splitter.width()
+        self.splitter.setSizes([300, total_width - 300])

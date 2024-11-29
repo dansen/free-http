@@ -11,8 +11,7 @@ class SideBar(QWidget):
     def __init__(self):
         super().__init__()
         # 设置初始宽度和大小策略
-        self.setMinimumWidth(200)
-        self.setMaximumWidth(400)
+        self.setMinimumWidth(100)
         self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         self.init_ui()
 
