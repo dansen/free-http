@@ -29,6 +29,15 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
         
+    - name: Check source files
+      run: |
+        if (!(Test-Path "src/main.py")) {
+          throw "Source file src/main.py not found"
+        }
+        if (!(Test-Path "src/assets/icon.ico")) {
+          throw "Icon file src/assets/icon.ico not found"
+        }
+        
     - name: Create assets directory
       run: |
         mkdir -p dist/src/assets
@@ -36,13 +45,30 @@ jobs:
         
     - name: Build with PyInstaller
       run: |
+        Write-Host "Starting PyInstaller build..."
+        dir src
         pyinstaller --name FreeHttp `
                    --windowed `
                    --icon=src/assets/icon.ico `
                    --add-data "src/assets;src/assets" `
                    --distpath . `
                    --noconfirm `
+                   --debug all `
                    src/main.py
+        Write-Host "PyInstaller build completed"
+        Write-Host "Current directory contents:"
+        dir
+        
+    - name: Verify PyInstaller output
+      run: |
+        Write-Host "Verifying FreeHttp.exe..."
+        if (!(Test-Path "FreeHttp.exe")) {
+          Write-Host "Error: FreeHttp.exe was not generated"
+          Write-Host "Directory contents:"
+          dir
+          throw "FreeHttp.exe was not generated"
+        }
+        Write-Host "FreeHttp.exe exists"
         
     - name: Install WiX Toolset
       run: |
@@ -96,8 +122,7 @@ jobs:
                   </Component>
                 </Directory>
               </Directory>
-              
-              <Directory Id='ProgramMenuFolder' Name='Programs'>
+　　 　 　 　 <Directory Id='ProgramMenuFolder' Name='Programs'>
                 <Directory Id='ProgramMenuDir' Name='FreeHttp'>
                   <Component Id='ProgramMenuDir' Guid='12345678-1234-1234-1234-123456789014'>
                     <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
