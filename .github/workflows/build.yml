@@ -49,10 +49,15 @@ jobs:
         Write-Host "Source directory contents:"
         dir src
         
+        # 使用 --collect-all 确保收集所有依赖
         pyinstaller --name FreeHttp `
                    --windowed `
                    --icon=src/assets/icon.ico `
                    --add-data "src/assets;src/assets" `
+                   --collect-all PyQt6 `
+                   --collect-all aiohttp `
+                   --collect-all qasync `
+                   --collect-all chardet `
                    --distpath dist `
                    --noconfirm `
                    --debug all `
@@ -61,114 +66,58 @@ jobs:
         Write-Host "Build completed. Checking directories..."
         Write-Host "Dist directory contents:"
         dir dist -Recurse
-        Write-Host "Build directory contents:"
-        dir build -Recurse
         
-        # Try to find and move the executable
-        if (Test-Path "dist/FreeHttp/FreeHttp.exe") {
-            Copy-Item "dist/FreeHttp/FreeHttp.exe" .
-        } elseif (Test-Path "dist/FreeHttp.exe") {
-            Copy-Item "dist/FreeHttp.exe" .
+    - name: Download Inno Setup
+      run: |
+        $innoUrl = "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe"
+        $innoInstaller = "innosetup.exe"
+        Invoke-WebRequest -Uri $innoUrl -OutFile $innoInstaller
+        Start-Process -FilePath $innoInstaller -Args "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
+        
+    - name: Create Inno Setup Script
+      run: |
+        $version = "${{ github.ref_name }}"
+        if ($version.StartsWith("v")) {
+            $version = $version.Substring(1)
+        }
+        if (!$version) {
+            $version = "1.0.0"
         }
         
-    - name: Verify PyInstaller output
-      run: |
-        Write-Host "Verifying FreeHttp.exe..."
-        if (!(Test-Path "FreeHttp.exe")) {
-          Write-Host "Error: FreeHttp.exe was not generated"
-          Write-Host "Directory contents:"
-          dir
-          throw "FreeHttp.exe was not generated"
-        }
-        Write-Host "FreeHttp.exe exists"
-        
-    - name: Install WiX Toolset
-      run: |
-        $wixUrl = "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip"
-        $wixZip = "wix311-binaries.zip"
-        Invoke-WebRequest -Uri $wixUrl -OutFile $wixZip
-        Expand-Archive $wixZip -DestinationPath wix
-        $env:PATH += ";$pwd\wix"
-        
-    - name: Create WiX source file
-      run: |
         @"
-        <?xml version='1.0' encoding='windows-1252'?>
-        <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-          <Product Name='FreeHttp' 
-                   Manufacturer='dansen'
-                   Id='*'
-                   UpgradeCode='12345678-1234-1234-1234-123456789012'
-                   Language='1033' 
-                   Codepage='1252' 
-                   Version='1.0.0'>
-            <Package Id='*'
-                     Keywords='Installer'
-                     Description='FreeHttp Installer'
-                     Comments='FreeHttp is a simple HTTP client'
-                     Manufacturer='dansen'
-                     InstallerVersion='100'
-                     Languages='1033'
-                     Compressed='yes'
-                     SummaryCodepage='1252' />
-            
-            <Media Id='1' Cabinet='FreeHttp.cab' EmbedCab='yes' />
-            
-            <Directory Id='TARGETDIR' Name='SourceDir'>
-              <Directory Id='ProgramFilesFolder' Name='PFiles'>
-                <Directory Id='INSTALLDIR' Name='FreeHttp'>
-                  <Component Id='MainExecutable' Guid='12345678-1234-1234-1234-123456789013'>
-                    <File Id='FreeHttpEXE'
-                          Name='FreeHttp.exe'
-                          DiskId='1'
-                          Source='FreeHttp.exe'
-                          KeyPath='yes'>
-                      <Shortcut Id='startmenuFreeHttp'
-                               Directory='ProgramMenuDir'
-                               Name='FreeHttp'
-                               WorkingDirectory='INSTALLDIR'
-                               Icon='FreeHttp.exe'
-                               IconIndex='0'
-                               Advertise='yes' />
-                    </File>
-                  </Component>
-                </Directory>
-              </Directory>
-              <Directory Id='ProgramMenuFolder' Name='Programs'>
-                <Directory Id='ProgramMenuDir' Name='FreeHttp'>
-                  <Component Id='ProgramMenuDir' Guid='12345678-1234-1234-1234-123456789014'>
-                    <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
-                    <RegistryValue Root='HKCU'
-                                 Key='Software\[Manufacturer]\[ProductName]'
-                                 Type='string'
-                                 Value=''
-                                 KeyPath='yes' />
-                  </Component>
-                </Directory>
-              </Directory>
-            </Directory>
-
-            <Feature Id='Complete' Level='1'>
-              <ComponentRef Id='MainExecutable' />
-              <ComponentRef Id='ProgramMenuDir' />
-            </Feature>
-            
-            <Icon Id='FreeHttp.exe' SourceFile='FreeHttp.exe' />
-          </Product>
-        </Wix>
-        "@ | Out-File -Encoding UTF8 FreeHttp.wxs
+        [Setup]
+        AppName=FreeHttp
+        AppVersion=$version
+        DefaultDirName={autopf}\FreeHttp
+        DefaultGroupName=FreeHttp
+        OutputBaseFilename=FreeHttp-Setup
+        Compression=lzma2
+        SolidCompression=yes
+        OutputDir=.
         
-    - name: Build MSI
+        [Files]
+        Source: "dist\FreeHttp\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+        
+        [Icons]
+        Name: "{group}\FreeHttp"; Filename: "{app}\FreeHttp.exe"
+        Name: "{commondesktop}\FreeHttp"; Filename: "{app}\FreeHttp.exe"
+        
+        [Run]
+        Filename: "{app}\FreeHttp.exe"; Description: "Launch FreeHttp"; Flags: postinstall nowait
+        "@ | Out-File -FilePath "setup.iss" -Encoding UTF8
+        
+    - name: Build Installer
       run: |
-        candle FreeHttp.wxs
-        light -ext WixUIExtension FreeHttp.wixobj
+        & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' setup.iss
+        
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: FreeHttp-Setup
+        path: FreeHttp-Setup.exe
         
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          FreeHttp.exe
-          FreeHttp.msi
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        files: FreeHttp-Setup.exe
