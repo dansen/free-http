@@ -46,18 +46,30 @@ jobs:
     - name: Build with PyInstaller
       run: |
         Write-Host "Starting PyInstaller build..."
+        Write-Host "Source directory contents:"
         dir src
+        
         pyinstaller --name FreeHttp `
                    --windowed `
                    --icon=src/assets/icon.ico `
                    --add-data "src/assets;src/assets" `
-                   --distpath . `
+                   --distpath dist `
                    --noconfirm `
                    --debug all `
                    src/main.py
-        Write-Host "PyInstaller build completed"
-        Write-Host "Current directory contents:"
-        dir
+                   
+        Write-Host "Build completed. Checking directories..."
+        Write-Host "Dist directory contents:"
+        dir dist -Recurse
+        Write-Host "Build directory contents:"
+        dir build -Recurse
+        
+        # Try to find and move the executable
+        if (Test-Path "dist/FreeHttp/FreeHttp.exe") {
+            Copy-Item "dist/FreeHttp/FreeHttp.exe" .
+        } elseif (Test-Path "dist/FreeHttp.exe") {
+            Copy-Item "dist/FreeHttp.exe" .
+        }
         
     - name: Verify PyInstaller output
       run: |
