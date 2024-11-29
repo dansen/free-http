@@ -3,16 +3,17 @@ from PyQt6.QtWidgets import (
     QListWidgetItem, QSizePolicy
 )
 from PyQt6.QtCore import pyqtSignal, Qt
+from models.api_model import ApiModel
 
 class SideBar(QWidget):
-    api_list_clicked = pyqtSignal(str)
-    history_list_clicked = pyqtSignal(str)
+    api_selected = pyqtSignal(dict)  # 发送选中的API数据
 
     def __init__(self):
         super().__init__()
         # 设置初始宽度和大小策略
         self.setMinimumWidth(100)
         self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.api_model = ApiModel()
         self.init_ui()
 
     def init_ui(self):
@@ -25,32 +26,27 @@ class SideBar(QWidget):
 
         # 列表项点击事件
         self.list_widget.itemClicked.connect(self.on_list_item_clicked)
+        
+        # 加载API列表
+        self.load_api_list()
 
-    def show_api_list(self):
+    def load_api_list(self):
+        """从数据库加载API列表"""
         self.list_widget.clear()
-        # 示例 API 列表
-        apis = [
-            "GitHub API",
-            "Weather API",
-            "Random User API",
-            "JSON Placeholder API"
-        ]
+        apis = self.api_model.get_all_apis()
         for api in apis:
-            item = QListWidgetItem(api)
-            self.list_widget.addItem(item)
-
-    def show_history_list(self):
-        self.list_widget.clear()
-        # 示例历史记录
-        histories = [
-            "GET https://api.github.com/users",
-            "POST https://jsonplaceholder.typicode.com/posts",
-            "PUT https://api.example.com/users/1"
-        ]
-        for history in histories:
-            item = QListWidgetItem(history)
+            item = QListWidgetItem(api['name'])
+            item.setData(Qt.ItemDataRole.UserRole, api['id'])  # 存储API ID
             self.list_widget.addItem(item)
 
     def on_list_item_clicked(self, item):
-        # 发送信号
-        self.api_list_clicked.emit(item.text())
+        """当API列表项被点击时触发"""
+        api_id = item.data(Qt.ItemDataRole.UserRole)
+        api_data = self.api_model.get_api_by_id(api_id)
+        if api_data:
+            self.api_selected.emit(api_data)
+
+    def add_api(self, name, method, url, headers, body):
+        """添加新的API到列表"""
+        api_id = self.api_model.save_api(name, method, url, headers, body)
+        self.load_api_list()  # 重新加载列表

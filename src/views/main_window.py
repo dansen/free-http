@@ -40,16 +40,8 @@ class MainWindow(QMainWindow):
         """)
         main_layout.addWidget(self.splitter)
         
-        # 创建内容切换区域
-        self.content_stacked_widget = QStackedWidget()
-        
         # 创建 API 列表侧边栏
         self.api_sidebar = SideBar()
-        self.content_stacked_widget.addWidget(self.api_sidebar)
-        
-        # 创建历史记录侧边栏
-        self.history_sidebar = SideBar()
-        self.content_stacked_widget.addWidget(self.history_sidebar)
         
         # 创建右侧内容区域
         right_widget = QWidget()
@@ -71,42 +63,13 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(self.response_panel)
         
         # 将内容区域和右侧面板添加到分割器
-        self.splitter.addWidget(self.content_stacked_widget)
+        self.splitter.addWidget(self.api_sidebar)
         self.splitter.addWidget(right_widget)
         
-        # 连接图标侧边栏信号
-        self.icon_sidebar.api_list_clicked.connect(self.show_api_list)
-        self.icon_sidebar.history_list_clicked.connect(self.show_history_list)
-        
-        # 连接侧边栏列表点击信号
-        self.api_sidebar.list_widget.itemClicked.connect(self.handle_api_list_click)
-        self.history_sidebar.list_widget.itemClicked.connect(self.handle_history_list_click)
-        
-        # 连接请求面板信号
+        # 连接信号
         self.request_panel.send_request.connect(self.handle_request)
-        
-        # 默认显示 API 列表
-        self.show_api_list()
-
-    def show_api_list(self):
-        self.api_sidebar.show_api_list()
-        self.content_stacked_widget.setCurrentWidget(self.api_sidebar)
-
-    def show_history_list(self):
-        self.history_sidebar.show_history_list()
-        self.content_stacked_widget.setCurrentWidget(self.history_sidebar)
-
-    def handle_api_list_click(self, item):
-        # 根据选择的 API 更新请求面板
-        api_name = item.text()
-        print(f"Selected API: {api_name}")
-        # TODO: 根据 API 名称填充请求面板
-        
-    def handle_history_list_click(self, item):
-        # 根据历史记录更新请求面板
-        history_item = item.text()
-        print(f"Selected History: {history_item}")
-        # TODO: 根据历史记录填充请求面板
+        self.request_panel.save_api.connect(self.api_sidebar.add_api)
+        self.api_sidebar.api_selected.connect(self.request_panel.load_api)
 
     @qasync.asyncSlot(str, str, dict, str)
     async def handle_request(self, method, url, headers, body):

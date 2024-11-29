@@ -1,10 +1,12 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox,
-                            QLineEdit, QTextEdit, QPushButton, QLabel, QMessageBox)
+                            QLineEdit, QTextEdit, QPushButton, QLabel, QMessageBox,
+                            QInputDialog)
 from PyQt6.QtCore import pyqtSignal
 import json
 
 class RequestPanel(QWidget):
     send_request = pyqtSignal(str, str, dict, str)
+    save_api = pyqtSignal(str, str, str, dict, dict)  # name, method, url, headers, body
     
     # 常用 Content-Type
     CONTENT_TYPES = {
@@ -76,6 +78,7 @@ class RequestPanel(QWidget):
     
     def __init__(self):
         super().__init__()
+        self.current_api_name = None
         self.init_ui()
         
     def init_ui(self):
@@ -135,9 +138,21 @@ Plain text content''')
         body_layout.addWidget(body_label)
         body_layout.addWidget(self.body_input)
         
-        # Send 按钮
+        # Send 按钮和 Save 按钮的布局
+        buttons_layout = QHBoxLayout()
+        
+        # 新建按钮
+        self.new_button = QPushButton("New API")
+        self.new_button.clicked.connect(self.on_new_clicked)
+        
         self.send_button = QPushButton("Send Request")
         self.send_button.clicked.connect(self.on_send_clicked)
+        self.save_button = QPushButton("Save API")
+        self.save_button.clicked.connect(self.on_save_clicked)
+        
+        buttons_layout.addWidget(self.new_button)
+        buttons_layout.addWidget(self.send_button)
+        buttons_layout.addWidget(self.save_button)
         
         # 添加所有组件到布局
         layout.addLayout(method_layout)
@@ -145,7 +160,7 @@ Plain text content''')
         layout.addWidget(self.headers_input)
         layout.addLayout(content_type_layout)
         layout.addLayout(body_layout)
-        layout.addWidget(self.send_button)
+        layout.addLayout(buttons_layout)
         
         # 设置默认 headers
         self.headers_input.setText(self.HEADER_TEMPLATES['Default'])
@@ -213,3 +228,74 @@ Plain text content''')
                 return
         
         self.send_request.emit(method, url, headers, body) 
+    
+    def on_new_clicked(self):
+        """创建新的API"""
+        # 获取新API名称
+        name, ok = QInputDialog.getText(self, 'New API', 'Enter API name:')
+        if not ok or not name:
+            return
+            
+        self.current_api_name = name
+        self.method_combo.setCurrentText('GET')
+        self.url_input.clear()
+        self.headers_input.setText(self.HEADER_TEMPLATES['Default'])
+        self.body_input.clear()
+
+    def on_save_clicked(self):
+        """保存当前API到数据库"""
+        if not self.current_api_name:
+            self.show_error("错误", "请先创建新API或选择已有API")
+            return
+
+        method = self.method_combo.currentText()
+        url = self.url_input.text()
+
+        # 验证URL
+        if not url:
+            self.show_error("错误", "请输入URL")
+            return
+
+        # 验证并解析headers
+        try:
+            headers = json.loads(self.headers_input.toPlainText() or '{}')
+            if not isinstance(headers, dict):
+                self.show_error("错误", "Headers 必须是一个 JSON 对象")
+                return
+        except json.JSONDecodeError as e:
+            self.show_error("Headers 格式错误", f"Headers 不是有效的 JSON 格式: {str(e)}")
+            return
+
+        # 验证并解析body
+        body_text = self.body_input.toPlainText()
+        if self.is_json_content_type(headers) and body_text:
+            is_valid, error = self.validate_json(body_text)
+            if not is_valid:
+                self.show_error("Body 格式错误", f"Body 不是有效的 JSON 格式: {error}")
+                return
+            body = json.loads(body_text) if body_text else {}
+        else:
+            # 对于非JSON内容，将body存储为字典格式
+            body = {"content": body_text} if body_text else {}
+
+        # 发出保存信号
+        self.save_api.emit(self.current_api_name, method, url, headers, body)
+
+    def load_api(self, api_data):
+        """加载API数据到界面"""
+        self.current_api_name = api_data['name']
+        self.method_combo.setCurrentText(api_data['method'])
+        self.url_input.setText(api_data['url'])
+        self.headers_input.setText(json.dumps(api_data['headers'], indent=4))
+        
+        # 处理body的显示
+        body = api_data['body']
+        if isinstance(body, dict):
+            if 'content' in body and not self.is_json_content_type(api_data['headers']):
+                # 非JSON内容，直接显示content字段
+                self.body_input.setText(body['content'])
+            else:
+                # JSON内容，格式化显示
+                self.body_input.setText(json.dumps(body, indent=4))
+        else:
+            self.body_input.setText(str(body) if body else '')
