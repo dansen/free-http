@@ -69,10 +69,7 @@ jobs:
         
     - name: Download Inno Setup
       run: |
-        $innoUrl = "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe"
-        $innoInstaller = "innosetup.exe"
-        Invoke-WebRequest -Uri $innoUrl -OutFile $innoInstaller
-        Start-Process -FilePath $innoInstaller -Args "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
+        Start-Process -FilePath "third-party/innosetup-6.2.2.exe" -Args "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
         
     - name: Create Inno Setup Script
       run: |
