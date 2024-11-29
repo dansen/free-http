@@ -1,5 +1,6 @@
 import aiohttp
 import asyncio
+import chardet
 
 class HttpClient:
     async def send_request(self, method, url, headers=None, body=None):
@@ -14,7 +15,18 @@ class HttpClient:
                     timeout=aiohttp.ClientTimeout(total=30)
                 ) as response:
                     status = response.status
-                    text = await response.text()
+                    # 读取原始字节数据
+                    content = await response.read()
+                    
+                    # 检测编码
+                    encoding = response.get_encoding()
+                    if not encoding:
+                        detected = chardet.detect(content)
+                        encoding = detected['encoding'] or 'utf-8'
+                    
+                    # 使用检测到的编码解码内容
+                    text = content.decode(encoding, errors='replace')
+                    
                     return {'status': status, 'text': text}
                     
         except aiohttp.ClientSSLError as e:
