@@ -12,6 +12,7 @@ class DomainDialog(QDialog):
         self.domain_model = domain_model
         self.setWindowTitle("Domain Manager")
         self.setMinimumWidth(500)
+        self.resize(800, 570)  # 设置初始大小为 800x570
         self.init_ui()
         
     def init_ui(self):
