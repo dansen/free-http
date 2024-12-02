@@ -18,6 +18,7 @@ from src.views.dialogs.domain_dialog import DomainDialog
 from src.controllers.request_controller import RequestController
 import asyncio
 from src.version import VERSION
+from PyQt6.QtWidgets import QApplication
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -25,6 +26,12 @@ class MainWindow(QMainWindow):
         
         self.setWindowTitle(f"Free Http v{VERSION}")
         self.resize(1360, 960)
+        
+        # 使窗口居中显示
+        screen = QApplication.primaryScreen().geometry()
+        x = (screen.width() - self.width()) // 2
+        y = (screen.height() - self.height()) // 2
+        self.move(x, y-40)
         
         # 创建状态栏
         self.statusBar().showMessage("Ready")
