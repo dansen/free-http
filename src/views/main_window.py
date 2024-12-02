@@ -67,44 +67,43 @@ class MainWindow(QMainWindow):
         
         # 创建请求和响应面板
         self.request_panel = RequestPanel()
-        self.request_panel.set_domain_model(self.domain_model)  # Set the domain model
         self.response_panel = ResponsePanel()
         
-        # 创建加载动画
-        self.loading_spinner = LoadingSpinner(self)
+        # 设置域名管理模型
+        self.request_panel.set_domain_model(self.domain_model)
         
-        # 添加到右侧布局
-        right_layout.addWidget(self.request_panel)
-        right_layout.addWidget(self.response_panel)
+        # 连接信号
+        self.request_panel.send_request.connect(self.handle_request)
+        self.request_panel.save_api.connect(self.api_sidebar.add_api)
+        self.request_panel.status_message.connect(self.show_status_message)
         
-        # 将内容区域和右侧面板添加到分割器
-        self.splitter.addWidget(self.api_sidebar)
-        self.splitter.addWidget(right_widget)
-        
-        # 连接侧边栏和请求面板的信号
+        # 连接 API 侧边栏的信号
         self.api_sidebar.api_selected.connect(self.request_panel.load_api)
         self.api_sidebar.api_deleted.connect(self.request_panel.on_api_deleted)
         self.api_sidebar.api_renamed.connect(self.request_panel.on_api_renamed)
-        self.request_panel.save_api.connect(self.api_sidebar.add_api)
-        self.request_panel.send_request.connect(self.handle_request)
-        self.request_panel.status_message.connect(self.show_status_message)
+        
+        # 添加面板到右侧布局
+        right_layout.addWidget(self.request_panel, stretch=3)
+        right_layout.addWidget(self.response_panel, stretch=2)
+        
+        # 添加组件到分割器
+        self.splitter.addWidget(self.api_sidebar)
+        self.splitter.addWidget(right_widget)
+        
+        # 设置分割器的初始大小
+        self.splitter.setSizes([300, 900])  # 左侧宽度300，右侧宽度900
         
         # 创建菜单栏
-        menubar = self.menuBar()
-        file_menu = menubar.addMenu("File")
-        edit_menu = menubar.addMenu("Edit")
+        self.create_menu_bar()
         
-        # 添加退出菜单项到File菜单
-        exit_action = QAction("Exit", self)
-        exit_action.setShortcut("Ctrl+Q")  # 添加快捷键
-        exit_action.triggered.connect(self.close)  # 连接到窗口的close方法
-        file_menu.addAction(exit_action)
-        
-        # 添加域名管理菜单项
-        domain_action = QAction("Manage Domains", self)
-        domain_action.triggered.connect(self.show_domain_dialog)
-        edit_menu.addAction(domain_action)
-        
+        # 创建加载动画
+        self.loading_spinner = LoadingSpinner(self)
+        self.loading_spinner.resize(100, 100)
+        self.loading_spinner.move(
+            (self.width() - self.loading_spinner.width()) // 2,
+            (self.height() - self.loading_spinner.height()) // 2
+        )
+
     @qasync.asyncSlot(str, str, dict, str, int)
     async def handle_request(self, method, url, headers, body, timeout):
         """处理API请求"""
@@ -172,3 +171,20 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Active Domain: {active_domain['name']} ({active_domain['domain']})")
         else:
             self.statusBar().showMessage("No active domain set")
+
+    def create_menu_bar(self):
+        """创建菜单栏"""
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu("File")
+        edit_menu = menubar.addMenu("Edit")
+        
+        # 添加退出菜单项到File菜单
+        exit_action = QAction("Exit", self)
+        exit_action.setShortcut("Ctrl+Q")  # 添加快捷键
+        exit_action.triggered.connect(self.close)  # 连接到窗口的close方法
+        file_menu.addAction(exit_action)
+        
+        # 添加域名管理菜单项
+        domain_action = QAction("Manage Domains", self)
+        domain_action.triggered.connect(self.show_domain_dialog)
+        edit_menu.addAction(domain_action)

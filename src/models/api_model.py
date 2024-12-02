@@ -17,12 +17,13 @@ class ApiModel:
             table_exists = cursor.fetchone() is not None
             
             if table_exists:
-                # 检查是否有 timeout 列
+                # 检查是否有需要的列
                 cursor.execute("PRAGMA table_info(apis)")
                 columns = cursor.fetchall()
                 has_timeout = any(col[1] == 'timeout' for col in columns)
+                has_last_selected = any(col[1] == 'last_selected' for col in columns)
                 
-                if not has_timeout:
+                if not has_timeout or not has_last_selected:
                     # 备份旧表
                     cursor.execute("ALTER TABLE apis RENAME TO apis_backup")
                     
@@ -36,14 +37,17 @@ class ApiModel:
                             headers TEXT,
                             body TEXT,
                             timeout INTEGER DEFAULT 30,
+                            last_selected DATETIME,
                             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                         )
                     ''')
                     
                     # 迁移数据
                     cursor.execute('''
-                        INSERT INTO apis (id, name, method, url, headers, body, created_at)
-                        SELECT id, name, method, url, headers, body, created_at
+                        INSERT INTO apis (id, name, method, url, headers, body, timeout, created_at)
+                        SELECT id, name, method, url, headers, body, 
+                               COALESCE(timeout, 30),
+                               created_at
                         FROM apis_backup
                     ''')
                     
@@ -60,6 +64,7 @@ class ApiModel:
                         headers TEXT,
                         body TEXT,
                         timeout INTEGER DEFAULT 30,
+                        last_selected DATETIME,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
@@ -163,3 +168,41 @@ class ApiModel:
         except sqlite3.IntegrityError:
             # 如果名称已存在，会触发唯一约束错误
             return False
+
+    def update_last_selected(self, api_id):
+        """更新最后选择的API"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            cursor = conn.cursor()
+            # 先清除所有的 last_selected
+            cursor.execute('UPDATE apis SET last_selected = NULL')
+            # 设置新的 last_selected
+            cursor.execute('''
+                UPDATE apis 
+                SET last_selected = CURRENT_TIMESTAMP
+                WHERE id = ?
+            ''', (api_id,))
+            conn.commit()
+
+    def get_last_selected_api(self):
+        """获取最后选择的API"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT id, name, method, url, headers, body, timeout 
+                FROM apis 
+                WHERE last_selected IS NOT NULL
+                ORDER BY last_selected DESC 
+                LIMIT 1
+            ''')
+            row = cursor.fetchone()
+            if row:
+                return {
+                    'id': row[0],
+                    'name': row[1],
+                    'method': row[2],
+                    'url': row[3],
+                    'headers': json.loads(row[4]) if row[4] else {},
+                    'body': json.loads(row[5]) if row[5] else {},
+                    'timeout': int(row[6]) if row[6] is not None else 30
+                }
+            return None

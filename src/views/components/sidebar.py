@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (
     QListWidgetItem, QSizePolicy, QMenu,
     QMessageBox, QInputDialog, QPushButton
 )
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtCore import pyqtSignal, Qt, QTimer
 from PyQt6.QtGui import QCursor, QKeyEvent, QFont
 from models.api_model import ApiModel
 
@@ -19,6 +19,9 @@ class SideBar(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         self.api_model = ApiModel()
         self.init_ui()
+        
+        # 在初始化完成后加载上次选择的 API
+        QTimer.singleShot(100, self.load_last_selected_api)
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -99,6 +102,19 @@ class SideBar(QWidget):
         # 加载API列表
         self.load_api_list()
 
+    def load_last_selected_api(self):
+        """加载上次选择的 API"""
+        last_selected = self.api_model.get_last_selected_api()
+        if last_selected:
+            # 找到并选中对应的列表项
+            for i in range(self.list_widget.count()):
+                item = self.list_widget.item(i)
+                if item.data(Qt.ItemDataRole.UserRole) == last_selected['id']:
+                    self.list_widget.setCurrentItem(item)
+                    # 发出 API 选中信号
+                    self.api_selected.emit(last_selected)
+                    break
+
     def show_context_menu(self, position):
         """显示右键菜单"""
         item = self.list_widget.itemAt(position)
@@ -158,19 +174,31 @@ class SideBar(QWidget):
                 self.api_deleted.emit(api_name)
                 
     def load_api_list(self):
-        """从数据库加载API列表"""
+        """加载API列表"""
         self.list_widget.clear()
         apis = self.api_model.get_all_apis()
+        
+        # 获取最后选择的API
+        last_selected = self.api_model.get_last_selected_api()
+        last_selected_id = last_selected['id'] if last_selected else None
+        
         for api in apis:
             item = QListWidgetItem(api['name'])
-            item.setData(Qt.ItemDataRole.UserRole, api['id'])  # 存储API ID
+            item.setData(Qt.ItemDataRole.UserRole, api['id'])
             self.list_widget.addItem(item)
+            
+            # 如果是最后选择的API，选中它
+            if api['id'] == last_selected_id:
+                self.list_widget.setCurrentItem(item)
+                self.api_selected.emit(api)
 
     def on_list_item_clicked(self, item):
         """当列表项被点击时"""
         api_id = item.data(Qt.ItemDataRole.UserRole)
         api_data = self.api_model.get_api_by_id(api_id)
         if api_data:
+            # 更新最后选择的API
+            self.api_model.update_last_selected(api_id)
             # 发出API被选中的信号
             self.api_selected.emit(api_data)
 
