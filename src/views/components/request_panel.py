@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox,
 from PyQt6.QtCore import pyqtSignal, QTimer
 from PyQt6.QtGui import QFont
 import json
+from urllib.parse import urlparse, urljoin
 
 class RequestPanel(QWidget):
     send_request = pyqtSignal(str, str, dict, str)
@@ -128,22 +129,47 @@ class RequestPanel(QWidget):
         
     def on_domain_selected(self, domain):
         """当选择域名时"""
-        current_url = self.url_input.text()
+        from urllib.parse import urlparse, urljoin
+        current_url = self.url_input.text().strip()
         
         if domain:
             self.domain_model.set_active_domain(domain['id'])
             self.domain_button.setText(domain['name'])
             
             # 更新URL
-            if current_url.startswith('http://') or current_url.startswith('https://'):
-                # 如果是完整URL，保持不变
-                pass
-            else:
-                # 如果是相对路径，添加域名
-                # 移除开头的斜杠以避免双斜杠
-                if current_url.startswith('/'):
-                    current_url = current_url[1:]
-                self.url_input.setText(f"{domain['domain']}/{current_url}")
+            if current_url:
+                # 解析当前URL
+                parsed_url = urlparse(current_url)
+                if not parsed_url.scheme and not current_url.startswith('http'):
+                    # 如果是相对路径，直接拼接
+                    if current_url.startswith('/'):
+                        current_url = current_url[1:]
+                    self.url_input.setText(f"{domain['domain']}/{current_url}")
+                else:
+                    # 如果是完整URL，替换协议、主机和端口部分
+                    if not parsed_url.scheme:
+                        current_url = 'http://' + current_url
+                        parsed_url = urlparse(current_url)
+                    
+                    # 获取路径部分（包括查询参数和片段）
+                    path = parsed_url.path
+                    if parsed_url.query:
+                        path += '?' + parsed_url.query
+                    if parsed_url.fragment:
+                        path += '#' + parsed_url.fragment
+                    
+                    # 确保路径以斜杠开头
+                    if not path.startswith('/'):
+                        path = '/' + path
+                    
+                    # 拼接新URL
+                    if path == '/':
+                        self.url_input.setText(domain['domain'])
+                    else:
+                        # 移除开头的斜杠以避免双斜杠
+                        if path.startswith('/'):
+                            path = path[1:]
+                        self.url_input.setText(f"{domain['domain']}/{path}")
             
             self.status_message.emit(f"已设置域名: {domain['name']}", 2000)
         else:
@@ -153,14 +179,18 @@ class RequestPanel(QWidget):
                 self.domain_model.set_active_domain(None)
             self.domain_button.setText("选择域名")
             
-            # 如果URL包含当前域名，则移除域名部分
-            active_domain = self.domain_model.get_active_domain()
-            if active_domain and current_url.startswith(active_domain['domain']):
-                relative_path = current_url[len(active_domain['domain']):]
-                # 确保路径以斜杠开头
-                if not relative_path.startswith('/'):
-                    relative_path = '/' + relative_path
-                self.url_input.setText(relative_path)
+            # 如果URL包含当前域名，则移除域名部分，保留路径
+            if current_url:
+                active_domain = self.domain_model.get_active_domain()
+                if active_domain:
+                    domain_url = active_domain['domain']
+                    if current_url.startswith(domain_url):
+                        path = current_url[len(domain_url):]
+                        if not path:
+                            path = '/'
+                        elif not path.startswith('/'):
+                            path = '/' + path
+                        self.url_input.setText(path)
             
             self.status_message.emit("已清除域名", 2000)
         
