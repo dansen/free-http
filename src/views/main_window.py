@@ -62,8 +62,8 @@ class MainWindow(QMainWindow):
         right_layout = QVBoxLayout()
         right_widget.setLayout(right_layout)
         
-        # 创建控制器
-        self.controller = RequestController()
+        # 创建控制器，设置 60 秒超时时间
+        self.controller = RequestController(timeout=60)
         
         # 创建请求和响应面板
         self.request_panel = RequestPanel()

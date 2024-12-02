@@ -3,6 +3,9 @@ import asyncio
 import chardet
 
 class HttpClient:
+    def __init__(self, timeout=30):
+        self.timeout = timeout
+
     async def send_request(self, method, url, headers=None, body=None):
         try:
             async with aiohttp.ClientSession() as session:
@@ -12,7 +15,7 @@ class HttpClient:
                     headers=headers,
                     data=body if body else None,
                     verify_ssl=False,
-                    timeout=aiohttp.ClientTimeout(total=30)
+                    timeout=aiohttp.ClientTimeout(total=self.timeout)
                 ) as response:
                     status = response.status
                     # 读取原始字节数据
