@@ -1,13 +1,18 @@
 from PyQt6.QtWidgets import (
     QMainWindow, QVBoxLayout, QWidget, 
-    QHBoxLayout, QStackedWidget, QSplitter
+    QHBoxLayout, QStackedWidget, QSplitter, 
+    QMenuBar, QMenu, QMessageBox
 )
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QAction
 from .components.request_panel import RequestPanel
 from .components.response_panel import ResponsePanel
 from .components.loading_spinner import LoadingSpinner
 from .components.icon_sidebar import IconSideBar
 from .components.sidebar import SideBar
+from .dialogs.domain_dialog import DomainDialog
+from models.api_model import ApiModel
+from models.domain_model import DomainModel
 from controllers.request_controller import RequestController
 import asyncio
 import qasync
@@ -15,11 +20,15 @@ import qasync
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("HTTP Client")
-        self.setMinimumSize(1200, 800)
+        self.setWindowTitle("Free Http")
+        self.resize(1200, 800)
         
         # 创建状态栏
         self.statusBar().showMessage("Ready")
+        
+        # 初始化模型
+        self.api_model = ApiModel()
+        self.domain_model = DomainModel()
         
         # 创建主窗口部件
         main_widget = QWidget()
@@ -76,7 +85,17 @@ class MainWindow(QMainWindow):
         self.request_panel.save_api.connect(self.api_sidebar.add_api)
         self.request_panel.send_request.connect(self.handle_request)
         self.request_panel.status_message.connect(self.show_status_message)
-
+        
+        # 创建菜单栏
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu("File")
+        edit_menu = menubar.addMenu("Edit")
+        
+        # 添加域名管理菜单项
+        domain_action = QAction("Manage Domains", self)
+        domain_action.triggered.connect(self.show_domain_dialog)
+        edit_menu.addAction(domain_action)
+        
     @qasync.asyncSlot(str, str, dict, str)
     async def handle_request(self, method, url, headers, body):
         self.loading_spinner.start()
@@ -111,3 +130,16 @@ class MainWindow(QMainWindow):
             timeout: 消息显示时间（毫秒），默认3秒
         """
         self.statusBar().showMessage(message, timeout)
+        
+    def show_domain_dialog(self):
+        dialog = DomainDialog(self.domain_model, self)
+        dialog.domain_changed.connect(self.on_domain_changed)
+        dialog.exec()
+        
+    def on_domain_changed(self):
+        # 当域名改变时更新状态栏
+        active_domain = self.domain_model.get_active_domain()
+        if active_domain:
+            self.statusBar().showMessage(f"Active Domain: {active_domain['name']} ({active_domain['domain']})")
+        else:
+            self.statusBar().showMessage("No active domain set")
