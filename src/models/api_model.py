@@ -89,3 +89,23 @@ class ApiModel:
             cursor.execute('DELETE FROM apis WHERE id = ?', (api_id,))
             conn.commit()
             return cursor.rowcount > 0  # 返回是否删除成功
+
+    def rename_api(self, api_id, new_name):
+        """重命名API
+        
+        Args:
+            api_id: API的ID
+            new_name: 新的名称
+            
+        Returns:
+            bool: 是否重命名成功
+        """
+        try:
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
+                cursor.execute('UPDATE apis SET name = ? WHERE id = ?', (new_name, api_id))
+                conn.commit()
+                return cursor.rowcount > 0
+        except sqlite3.IntegrityError:
+            # 如果名称已存在，会触发唯一约束错误
+            return False

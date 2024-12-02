@@ -8,6 +8,7 @@ class RequestPanel(QWidget):
     send_request = pyqtSignal(str, str, dict, str)
     save_api = pyqtSignal(str, str, str, dict, dict)  # name, method, url, headers, body
     api_deleted = pyqtSignal(str)  # name
+    api_renamed = pyqtSignal(str, str)  # old_name, new_name
     
     # 常用 Content-Type
     CONTENT_TYPES = {
@@ -313,3 +314,8 @@ Plain text content''')
         """当API被删除时，如果是当前API则清空界面"""
         if api_name == self.current_api_name:
             self.clear_api()
+
+    def on_api_renamed(self, old_name, new_name):
+        """当API被重命名时更新当前API名称"""
+        if old_name == self.current_api_name:
+            self.current_api_name = new_name

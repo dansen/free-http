@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QListWidget, 
     QListWidgetItem, QSizePolicy, QMenu,
-    QMessageBox
+    QMessageBox, QInputDialog
 )
 from PyQt6.QtCore import pyqtSignal, Qt
 from PyQt6.QtGui import QCursor
@@ -10,6 +10,7 @@ from models.api_model import ApiModel
 class SideBar(QWidget):
     api_selected = pyqtSignal(dict)  # 发送选中的API数据
     api_deleted = pyqtSignal(str)    # 发送被删除的API名称
+    api_renamed = pyqtSignal(str, str)  # 发送API的旧名称和新名称
 
     def __init__(self):
         super().__init__()
@@ -44,11 +45,37 @@ class SideBar(QWidget):
             return
 
         menu = QMenu()
+        rename_action = menu.addAction("Rename")
         delete_action = menu.addAction("Delete")
         action = menu.exec(QCursor.pos())
         
         if action == delete_action:
             self.delete_api(item)
+        elif action == rename_action:
+            self.rename_api(item)
+
+    def rename_api(self, item):
+        """重命名选中的API"""
+        old_name = item.text()
+        api_id = item.data(Qt.ItemDataRole.UserRole)
+        
+        # 输入新名称
+        new_name, ok = QInputDialog.getText(
+            self, 'Rename API',
+            'Enter new name:',
+            text=old_name
+        )
+        
+        if ok and new_name and new_name != old_name:
+            if self.api_model.rename_api(api_id, new_name):
+                item.setText(new_name)
+                self.api_renamed.emit(old_name, new_name)
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Rename Failed",
+                    f'Failed to rename API. The name "{new_name}" might already exist.'
+                )
 
     def delete_api(self, item):
         """删除选中的API"""

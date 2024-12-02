@@ -66,11 +66,12 @@ class MainWindow(QMainWindow):
         self.splitter.addWidget(self.api_sidebar)
         self.splitter.addWidget(right_widget)
         
-        # 连接信号
-        self.request_panel.send_request.connect(self.handle_request)
-        self.request_panel.save_api.connect(self.api_sidebar.add_api)
+        # 连接侧边栏和请求面板的信号
         self.api_sidebar.api_selected.connect(self.request_panel.load_api)
         self.api_sidebar.api_deleted.connect(self.request_panel.on_api_deleted)
+        self.api_sidebar.api_renamed.connect(self.request_panel.on_api_renamed)
+        self.request_panel.save_api.connect(self.api_sidebar.load_api_list)
+        self.request_panel.send_request.connect(self.handle_request)
 
     @qasync.asyncSlot(str, str, dict, str)
     async def handle_request(self, method, url, headers, body):
