@@ -24,10 +24,30 @@ class SideBar(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
+        # 创建按钮字体
+        button_font = QFont("Segoe UI", 10)
+
         # 新建API按钮
-        new_api_button = QPushButton("New API")
-        new_api_button.clicked.connect(self.create_new_api)
-        layout.addWidget(new_api_button)
+        self.new_api_button = QPushButton("New API")
+        self.new_api_button.setFont(button_font)
+        self.new_api_button.setMinimumHeight(32)
+        self.new_api_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2ecc71;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 6px 12px;
+            }
+            QPushButton:hover {
+                background-color: #27ae60;
+            }
+            QPushButton:pressed {
+                background-color: #219a52;
+            }
+        """)
+        self.new_api_button.clicked.connect(self.create_new_api)
+        layout.addWidget(self.new_api_button)
 
         # 列表展示区域
         self.list_widget = QListWidget()
@@ -38,11 +58,31 @@ class SideBar(QWidget):
         list_font.setPointSize(11)
         self.list_widget.setFont(list_font)
         
-        # 设置项目高度
+        # 设置项目高度和样式
         self.list_widget.setStyleSheet("""
+            QListWidget {
+                border: 1px solid #dcdde1;
+                border-radius: 4px;
+                padding: 2px;
+                background-color: white;
+            }
             QListWidget::item {
                 padding: 5px;
                 min-height: 25px;
+                border-radius: 3px;
+                margin: 1px;
+            }
+            QListWidget::item:selected {
+                background-color: #3498db;
+                color: white;
+            }
+            QListWidget::item:hover {
+                background-color: #f1f2f6;
+                color: #2d3436;
+            }
+            QListWidget::item:selected:hover {
+                background-color: #2980b9;
+                color: white;
             }
         """)
         

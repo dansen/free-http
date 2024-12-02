@@ -177,17 +177,52 @@ class RequestPanel(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
         
-        # 创建等宽编程字体
+        # 创建等宽编程字体和按钮字体
         code_font = QFont("Consolas, Courier New, monospace")
         code_font.setPointSize(10)
+        button_font = QFont("Segoe UI", 10)
 
         # HTTP 方法选择和 URL 输入
         method_layout = QHBoxLayout()
         self.method_combo = QComboBox()
-        self.method_combo.addItems(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'])
+        self.method_combo.addItems(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+        self.method_combo.setFont(button_font)
+        self.method_combo.setFixedWidth(100)
+        self.method_combo.setStyleSheet("""
+            QComboBox {
+                border: 1px solid #dcdde1;
+                border-radius: 4px;
+                padding: 4px 8px;
+                min-height: 28px;
+            }
+            QComboBox::drop-down {
+                border: none;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 6px solid #636e72;
+                margin-right: 8px;
+            }
+        """)
         self.url_input = QLineEdit()
-        self.url_input.setFont(code_font)
+        self.url_input.setFont(QFont("Segoe UI", 11))  # 使用更大的字体
+        self.url_input.setMinimumHeight(32)  # 设置最小高度
+        self.url_input.setStyleSheet("""
+            QLineEdit {
+                border: 1px solid #dcdde1;
+                border-radius: 4px;
+                padding: 4px 8px;
+                background-color: white;
+            }
+            QLineEdit:focus {
+                border: 1px solid #3498db;
+                background-color: #f8f9fa;
+            }
+        """)
         self.url_input.setPlaceholderText('https://api.example.com/v1/resource')
+        
         method_layout.addWidget(self.method_combo)
         method_layout.addWidget(self.url_input)
         
@@ -241,6 +276,27 @@ Plain text content''')
         buttons_layout = QHBoxLayout()
         
         self.send_button = QPushButton("Send Request")
+        self.send_button.setFont(button_font)
+        self.send_button.setMinimumHeight(36)
+        self.send_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 16px;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+            QPushButton:pressed {
+                background-color: #2475a8;
+            }
+            QPushButton:disabled {
+                background-color: #bdc3c7;
+            }
+        """)
         self.send_button.clicked.connect(self.on_send_clicked)
         
         buttons_layout.addWidget(self.send_button)
