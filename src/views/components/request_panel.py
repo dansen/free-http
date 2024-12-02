@@ -188,17 +188,12 @@ Plain text content''')
         body_layout.addWidget(body_label)
         body_layout.addWidget(self.body_input)
         
-        # Send 按钮和 New 按钮的布局
+        # Send 按钮布局
         buttons_layout = QHBoxLayout()
-        
-        # 新建按钮
-        self.new_button = QPushButton("New API")
-        self.new_button.clicked.connect(self.on_new_clicked)
         
         self.send_button = QPushButton("Send Request")
         self.send_button.clicked.connect(self.on_send_clicked)
         
-        buttons_layout.addWidget(self.new_button)
         buttons_layout.addWidget(self.send_button)
         
         # 添加所有组件到布局
@@ -276,19 +271,6 @@ Plain text content''')
         
         self.send_request.emit(method, url, headers, body) 
     
-    def on_new_clicked(self):
-        """创建新的API"""
-        # 获取新API名称
-        name, ok = QInputDialog.getText(self, 'New API', 'Enter API name:')
-        if not ok or not name:
-            return
-            
-        self.current_api_name = name
-        self.method_combo.setCurrentText('GET')
-        self.url_input.clear()
-        self.headers_input.setText(self.HEADER_TEMPLATES['Default'])
-        self.body_input.clear()
-
     def load_api(self, api_data):
         """加载API数据到界面"""
         self.current_api_name = api_data['name']
