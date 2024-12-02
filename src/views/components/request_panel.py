@@ -202,7 +202,7 @@ class RequestPanel(QWidget):
         # 监听body变化
         self.body_input.textChanged.connect(self.trigger_auto_save)
         # 监听超时时间变化
-        self.timeout_spinbox.valueChanged.connect(self.trigger_auto_save)
+        self.timeout_input.valueChanged.connect(self.trigger_auto_save)
 
     def trigger_auto_save(self):
         """触发自动保存"""
@@ -245,7 +245,7 @@ class RequestPanel(QWidget):
                 body = {"content": body_text} if body_text else {}
 
             # 获取超时设置
-            timeout = self.timeout_spinbox.value()
+            timeout = self.timeout_input.value()
 
             # 检查数据是否有变化
             current_data = {
@@ -334,19 +334,55 @@ class RequestPanel(QWidget):
         domain_layout.addWidget(self.domain_button)
         
         # 添加超时设置
-        timeout_layout = QHBoxLayout()
-        timeout_label = QLabel("超时时间(秒):")
-        self.timeout_spinbox = QSpinBox()
-        self.timeout_spinbox.setMinimum(1)
-        self.timeout_spinbox.setMaximum(300)  # 最大300秒
-        self.timeout_spinbox.setValue(30)  # 默认30秒
-        self.timeout_spinbox.setFixedWidth(70)
-        timeout_layout.addWidget(timeout_label)
-        timeout_layout.addWidget(self.timeout_spinbox)
-        timeout_layout.addStretch()
+        timeout_label = QLabel("Timeout:")
+        timeout_label.setFont(QFont("Segoe UI", 10))
+        self.timeout_input = QSpinBox()
+        self.timeout_input.setFont(QFont("Segoe UI", 10))
+        self.timeout_input.setMinimum(1)
+        self.timeout_input.setMaximum(300)
+        self.timeout_input.setValue(30)
+        self.timeout_input.setSuffix(" s")
+        self.timeout_input.setFixedWidth(100)
+        self.timeout_input.setStyleSheet("""
+            QSpinBox {
+                border: 1px solid #dcdde1;
+                border-radius: 4px;
+                padding: 5px 10px;
+                background-color: white;
+                min-height: 25px;
+            }
+            QSpinBox:hover {
+                border-color: #3498db;
+            }
+            QSpinBox:focus {
+                border-color: #3498db;
+            }
+            QSpinBox::up-button, QSpinBox::down-button {
+                width: 20px;
+                border: none;
+                background: transparent;
+            }
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+                background-color: #f0f0f0;
+            }
+            QSpinBox::up-arrow {
+                width: 0;
+                height: 0;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-bottom: 6px solid #636e72;
+            }
+            QSpinBox::down-arrow {
+                width: 0;
+                height: 0;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 6px solid #636e72;
+            }
+        """)
         
-        # 将超时设置添加到域名布局中
-        domain_layout.addLayout(timeout_layout)
+        domain_layout.addWidget(timeout_label)
+        domain_layout.addWidget(self.timeout_input)
         domain_layout.addStretch()
         
         main_layout.addLayout(domain_layout)
@@ -381,6 +417,12 @@ class RequestPanel(QWidget):
                 border-right: 5px solid transparent;
                 border-top: 6px solid #636e72;
                 margin-right: 8px;
+            }
+            QComboBox QAbstractItemView {
+                border: 1px solid #dcdde1;
+                selection-background-color: #3498db;
+                selection-color: white;
+                background-color: white;
             }
         """)
         
@@ -638,7 +680,7 @@ Plain text content''')
                 return
         
         # 获取超时时间
-        timeout = self.timeout_spinbox.value()
+        timeout = self.timeout_input.value()
         
         self.send_request.emit(method, url, headers, body, timeout)
     
@@ -663,7 +705,7 @@ Plain text content''')
         
         # 设置超时时间
         timeout = api_data.get('timeout', 30)  # 如果没有timeout字段，使用默认值30
-        self.timeout_spinbox.setValue(int(timeout))  # 确保是整数
+        self.timeout_input.setValue(int(timeout))  # 确保是整数
         
         # 处理body的显示
         body = api_data['body']

@@ -1,5 +1,5 @@
 import asyncio
-from utils.http_client import HttpClient
+from src.utils.http_client import HttpClient
 
 class RequestController:
     def __init__(self):
