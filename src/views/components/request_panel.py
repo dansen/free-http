@@ -300,6 +300,7 @@ class RequestPanel(QWidget):
     def init_ui(self):
         # 创建主布局
         main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(8, 8, 8, 8)  # 设置边距为8px
         self.setLayout(main_layout)
         
         # 创建等宽编程字体和按钮字体
@@ -404,33 +405,54 @@ class RequestPanel(QWidget):
         main_layout.addLayout(method_layout)
         
         # Headers 部分
-        headers_layout = QHBoxLayout()
-        headers_label = QLabel("Headers:")
+        headers_layout = QVBoxLayout()
+        headers_label_layout = QHBoxLayout()
+        headers_label = QLabel("Headers")
+        headers_label.setFont(button_font)
+        
+        # 添加Headers模板选择
         self.headers_template_combo = QComboBox()
-        self.headers_template_combo.addItems(list(self.HEADER_TEMPLATES.keys()))
+        self.headers_template_combo.addItems(list(self.HEADER_TEMPLATES.keys()))  # 移除额外的 Default
+        self.headers_template_combo.setFixedWidth(150)
         self.headers_template_combo.currentTextChanged.connect(self.on_header_template_changed)
-        headers_layout.addWidget(headers_label)
-        headers_layout.addWidget(self.headers_template_combo)
+        
+        # 添加Content-Type选择
+        self.content_type_combo = QComboBox()
+        self.content_type_combo.addItems(list(self.CONTENT_TYPES.keys()))
+        self.content_type_combo.setFixedWidth(200)
+        self.content_type_combo.currentTextChanged.connect(self.on_content_type_changed)
+        
+        headers_label_layout.addWidget(headers_label)
+        headers_label_layout.addWidget(self.headers_template_combo)
+        headers_label_layout.addWidget(self.content_type_combo)
+        headers_label_layout.addStretch()
         
         self.headers_input = QTextEdit()
         self.headers_input.setFont(code_font)
-        self.headers_input.setMaximumHeight(100)
-        self.headers_input.setPlaceholderText('{"Content-Type": "application/json"}')
+        self.headers_input.setMinimumHeight(120)  # 增加headers区域的最小高度
+        self.headers_input.setStyleSheet("""
+            QTextEdit {
+                border: 1px solid #dcdde1;
+                border-radius: 4px;
+                padding: 8px;
+                background-color: white;
+            }
+            QTextEdit:focus {
+                border: 1px solid #3498db;
+            }
+        """)
         
-        # Content-Type 快速选择
-        content_type_layout = QHBoxLayout()
-        content_type_label = QLabel("Content-Type:")
-        self.content_type_combo = QComboBox()
-        self.content_type_combo.addItems(list(self.CONTENT_TYPES.keys()))
-        self.content_type_combo.currentTextChanged.connect(self.on_content_type_changed)
-        content_type_layout.addWidget(content_type_label)
-        content_type_layout.addWidget(self.content_type_combo)
+        headers_layout.addLayout(headers_label_layout)
+        headers_layout.addWidget(self.headers_input)
+        
+        main_layout.addLayout(headers_layout)
         
         # Body
         body_layout = QVBoxLayout()
         body_label = QLabel("Request Body:")
         self.body_input = QTextEdit()
         self.body_input.setFont(code_font)
+        self.body_input.setMinimumHeight(200)
         self.body_input.setPlaceholderText('''// JSON 示例
 {
     "key": "value",
@@ -479,9 +501,6 @@ Plain text content''')
         buttons_layout.addWidget(self.send_button)
         
         # 添加所有组件到布局
-        main_layout.addLayout(headers_layout)
-        main_layout.addWidget(self.headers_input)
-        main_layout.addLayout(content_type_layout)
         main_layout.addLayout(body_layout)
         main_layout.addLayout(buttons_layout)
         
