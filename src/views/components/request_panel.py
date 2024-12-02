@@ -277,15 +277,16 @@ class RequestPanel(QWidget):
         return True
         
     def init_ui(self):
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        # 创建主布局
+        main_layout = QVBoxLayout()
+        self.setLayout(main_layout)
         
         # 创建等宽编程字体和按钮字体
         code_font = QFont("Consolas, Courier New, monospace")
         code_font.setPointSize(10)
         button_font = QFont("Segoe UI", 10)
 
-        # 域名选择按钮
+        # 创建域名选择按钮
         self.domain_button = QPushButton("选择域名")
         self.domain_button.setFont(button_font)
         self.domain_button.setFixedWidth(120)
@@ -293,8 +294,7 @@ class RequestPanel(QWidget):
             QPushButton {
                 border: 1px solid #dcdde1;
                 border-radius: 4px;
-                padding: 4px 8px;
-                min-height: 28px;
+                padding: 5px 10px;
                 background-color: white;
                 text-align: left;
             }
@@ -307,6 +307,12 @@ class RequestPanel(QWidget):
         """)
         self.domain_button.clicked.connect(self.show_domain_menu)
         
+        # 创建域名按钮布局
+        domain_layout = QHBoxLayout()
+        domain_layout.addWidget(self.domain_button)
+        domain_layout.addStretch()
+        main_layout.addLayout(domain_layout)
+        
         # HTTP 方法选择和 URL 输入
         method_layout = QHBoxLayout()
         self.method_combo = QComboBox()
@@ -317,20 +323,29 @@ class RequestPanel(QWidget):
             QComboBox {
                 border: 1px solid #dcdde1;
                 border-radius: 4px;
-                padding: 4px 8px;
-                min-height: 28px;
+                padding: 5px 10px;
+                background-color: white;
+            }
+            QComboBox:hover {
+                border-color: #3498db;
+            }
+            QComboBox:pressed {
+                background-color: #f8f9fa;
             }
             QComboBox::drop-down {
                 border: none;
+                width: 20px;
             }
             QComboBox::down-arrow {
-                image: none;
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
+                width: 0;
+                height: 0;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
                 border-top: 6px solid #636e72;
                 margin-right: 8px;
             }
         """)
+        
         self.url_input = QLineEdit()
         self.url_input.setFont(QFont("Segoe UI", 11))  # 使用更大的字体
         self.url_input.setMinimumHeight(32)  # 设置最小高度
@@ -338,8 +353,7 @@ class RequestPanel(QWidget):
             QLineEdit {
                 border: 1px solid #dcdde1;
                 border-radius: 4px;
-                padding: 4px 8px;
-                background-color: white;
+                padding: 5px 10px;
             }
             QLineEdit:focus {
                 border: 1px solid #3498db;
@@ -348,9 +362,9 @@ class RequestPanel(QWidget):
         """)
         self.url_input.setPlaceholderText('https://api.example.com/v1/resource')
         
-        method_layout.addWidget(self.domain_button)
         method_layout.addWidget(self.method_combo)
         method_layout.addWidget(self.url_input)
+        main_layout.addLayout(method_layout)
         
         # Headers 部分
         headers_layout = QHBoxLayout()
@@ -428,12 +442,11 @@ Plain text content''')
         buttons_layout.addWidget(self.send_button)
         
         # 添加所有组件到布局
-        layout.addLayout(method_layout)
-        layout.addLayout(headers_layout)
-        layout.addWidget(self.headers_input)
-        layout.addLayout(content_type_layout)
-        layout.addLayout(body_layout)
-        layout.addLayout(buttons_layout)
+        main_layout.addLayout(headers_layout)
+        main_layout.addWidget(self.headers_input)
+        main_layout.addLayout(content_type_layout)
+        main_layout.addLayout(body_layout)
+        main_layout.addLayout(buttons_layout)
         
         # 设置默认 headers
         self.headers_input.setText(self.HEADER_TEMPLATES['Default'])
