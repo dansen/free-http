@@ -82,6 +82,7 @@ class RequestPanel(QWidget):
     def __init__(self):
         super().__init__()
         self.current_api_name = None
+        self.current_api_data = None  # 存储当前API的数据，用于比较变化
         self.init_ui()
         self.setup_auto_save()
         
@@ -125,12 +126,51 @@ class RequestPanel(QWidget):
             else:
                 body = {"content": body_text} if body_text else {}
 
+            # 检查数据是否有变化
+            current_data = {
+                'method': method,
+                'url': url,
+                'headers': headers,
+                'body': body
+            }
+            
+            if self.current_api_data and self.is_data_equal(current_data, self.current_api_data):
+                return
+
             # 发出保存信号
             self.save_api.emit(self.current_api_name, method, url, headers, body)
+            self.current_api_data = current_data.copy()  # 更新当前数据
             self.status_message.emit("API saved", 1000)
         except Exception as e:
             self.status_message.emit(f"Failed to save API: {str(e)}", 3000)
-    
+
+    def is_data_equal(self, data1, data2):
+        """比较两个API数据是否相同"""
+        print("[Data Compare] Checking if API data has changed:")
+        
+        if data1['method'] != data2['method']:
+            print(f"[Data Compare] Method changed: {data1['method']} -> {data2['method']}")
+            return False
+            
+        if data1['url'] != data2['url']:
+            print(f"[Data Compare] URL changed: {data1['url']} -> {data2['url']}")
+            return False
+            
+        if data1['headers'] != data2['headers']:
+            print("[Data Compare] Headers changed:")
+            print(f"Old headers: {json.dumps(data1['headers'], indent=2)}")
+            print(f"New headers: {json.dumps(data2['headers'], indent=2)}")
+            return False
+            
+        if data1['body'] != data2['body']:
+            print("[Data Compare] Body changed:")
+            print(f"Old body: {json.dumps(data1['body'], indent=2)}")
+            print(f"New body: {json.dumps(data2['body'], indent=2)}")
+            return False
+            
+        print("[Data Compare] No changes detected")
+        return True
+        
     def init_ui(self):
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -274,6 +314,12 @@ Plain text content''')
     def load_api(self, api_data):
         """加载API数据到界面"""
         self.current_api_name = api_data['name']
+        self.current_api_data = {
+            'method': api_data['method'],
+            'url': api_data['url'],
+            'headers': api_data['headers'],
+            'body': api_data['body']
+        }
         self.method_combo.setCurrentText(api_data['method'])
         self.url_input.setText(api_data['url'])
         self.headers_input.setText(json.dumps(api_data['headers'], indent=4))
@@ -293,6 +339,7 @@ Plain text content''')
     def clear_api(self):
         """清空当前API信息"""
         self.current_api_name = None
+        self.current_api_data = None
         self.method_combo.setCurrentText('GET')
         self.url_input.clear()
         self.headers_input.setText(self.HEADER_TEMPLATES['Default'])

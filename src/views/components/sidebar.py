@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QInputDialog, QPushButton
 )
 from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtGui import QCursor
+from PyQt6.QtGui import QCursor, QKeyEvent
 from models.api_model import ApiModel
 
 class SideBar(QWidget):
@@ -31,6 +31,7 @@ class SideBar(QWidget):
 
         # 列表展示区域
         self.list_widget = QListWidget()
+        self.list_widget.keyPressEvent = self.handle_key_press
         layout.addWidget(self.list_widget)
 
         # 列表项点击事件
@@ -160,3 +161,13 @@ class SideBar(QWidget):
                     self.list_widget.setCurrentItem(item)
                     self.on_list_item_clicked(item)
                     break
+
+    def handle_key_press(self, event: QKeyEvent):
+        """处理键盘事件"""
+        if event.key() == Qt.Key.Key_F2:
+            current_item = self.list_widget.currentItem()
+            if current_item:
+                self.rename_api(current_item)
+        else:
+            # 确保其他键盘事件正常工作
+            QListWidget.keyPressEvent(self.list_widget, event)
