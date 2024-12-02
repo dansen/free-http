@@ -9,6 +9,7 @@ class RequestPanel(QWidget):
     save_api = pyqtSignal(str, str, str, dict, dict)  # name, method, url, headers, body
     api_deleted = pyqtSignal(str)  # name
     api_renamed = pyqtSignal(str, str)  # old_name, new_name
+    status_message = pyqtSignal(str, int)  # message, timeout
     
     # 常用 Content-Type
     CONTENT_TYPES = {
@@ -106,16 +107,19 @@ class RequestPanel(QWidget):
         try:
             headers = json.loads(self.headers_input.toPlainText() or '{}')
             if not isinstance(headers, dict):
+                self.status_message.emit("Headers must be a JSON object", 3000)
                 return
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            self.status_message.emit(f"Invalid JSON in headers: {str(e)}", 3000)
             return
 
         # 验证并解析body
         body_text = self.body_input.toPlainText()
         try:
             if self.is_json_content_type(headers) and body_text:
-                is_valid, _ = self.validate_json(body_text)
+                is_valid, error = self.validate_json(body_text)
                 if not is_valid:
+                    self.status_message.emit(f"Invalid JSON in body: {error}", 3000)
                     return
                 body = json.loads(body_text) if body_text else {}
             else:
@@ -123,10 +127,10 @@ class RequestPanel(QWidget):
 
             # 发出保存信号
             self.save_api.emit(self.current_api_name, method, url, headers, body)
-        except:
-            # 如果保存过程中出现任何错误，静默处理
-            pass
-
+            self.status_message.emit("API saved", 1000)
+        except Exception as e:
+            self.status_message.emit(f"Failed to save API: {str(e)}", 3000)
+    
     def init_ui(self):
         layout = QVBoxLayout()
         self.setLayout(layout)

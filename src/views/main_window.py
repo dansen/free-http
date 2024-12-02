@@ -18,6 +18,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("HTTP Client")
         self.setMinimumSize(1200, 800)
         
+        # 创建状态栏
+        self.statusBar().showMessage("Ready")
+        
         # 创建主窗口部件
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
@@ -72,6 +75,7 @@ class MainWindow(QMainWindow):
         self.api_sidebar.api_renamed.connect(self.request_panel.on_api_renamed)
         self.request_panel.save_api.connect(self.api_sidebar.add_api)
         self.request_panel.send_request.connect(self.handle_request)
+        self.request_panel.status_message.connect(self.show_status_message)
 
     @qasync.asyncSlot(str, str, dict, str)
     async def handle_request(self, method, url, headers, body):
@@ -98,3 +102,12 @@ class MainWindow(QMainWindow):
         # 设置分割器初始大小
         total_width = self.splitter.width()
         self.splitter.setSizes([300, total_width - 300])
+
+    def show_status_message(self, message, timeout=3000):
+        """在状态栏显示消息
+        
+        Args:
+            message: 要显示的消息
+            timeout: 消息显示时间（毫秒），默认3秒
+        """
+        self.statusBar().showMessage(message, timeout)
