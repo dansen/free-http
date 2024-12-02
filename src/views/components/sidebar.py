@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QListWidget, 
     QListWidgetItem, QSizePolicy, QMenu,
-    QMessageBox, QInputDialog
+    QMessageBox, QInputDialog, QPushButton
 )
 from PyQt6.QtCore import pyqtSignal, Qt
 from PyQt6.QtGui import QCursor
@@ -23,6 +23,11 @@ class SideBar(QWidget):
     def init_ui(self):
         layout = QVBoxLayout()
         self.setLayout(layout)
+
+        # 新建API按钮
+        new_api_button = QPushButton("New API")
+        new_api_button.clicked.connect(self.create_new_api)
+        layout.addWidget(new_api_button)
 
         # 列表展示区域
         self.list_widget = QListWidget()
@@ -116,3 +121,41 @@ class SideBar(QWidget):
         """添加新的API到列表"""
         api_id = self.api_model.save_api(name, method, url, headers, body)
         self.load_api_list()  # 重新加载列表
+
+    def create_new_api(self):
+        """创建新的API"""
+        name, ok = QInputDialog.getText(self, 'New API', 'Enter API name:')
+        if ok and name:
+            # 检查名称是否已存在
+            apis = self.api_model.get_all_apis()
+            if any(api['name'] == name for api in apis):
+                QMessageBox.warning(
+                    self,
+                    "Create Failed",
+                    f'An API with the name "{name}" already exists.'
+                )
+                return
+            
+            # 创建新API
+            api_id = self.api_model.save_api(
+                name=name,
+                method='GET',
+                url='',
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "User-Agent": "FreeHttp/1.0"
+                },
+                body={}
+            )
+            
+            # 重新加载列表并选中新创建的API
+            self.load_api_list()
+            
+            # 找到并选中新创建的API项
+            for i in range(self.list_widget.count()):
+                item = self.list_widget.item(i)
+                if item.data(Qt.ItemDataRole.UserRole) == api_id:
+                    self.list_widget.setCurrentItem(item)
+                    self.on_list_item_clicked(item)
+                    break
