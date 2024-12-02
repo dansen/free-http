@@ -412,14 +412,82 @@ class RequestPanel(QWidget):
         
         # 添加Headers模板选择
         self.headers_template_combo = QComboBox()
-        self.headers_template_combo.addItems(list(self.HEADER_TEMPLATES.keys()))  # 移除额外的 Default
+        self.headers_template_combo.addItems(list(self.HEADER_TEMPLATES.keys()))
         self.headers_template_combo.setFixedWidth(150)
+        self.headers_template_combo.setFont(QFont("Segoe UI", 10))
+        self.headers_template_combo.setStyleSheet("""
+            QComboBox {
+                border: 1px solid #dcdde1;
+                border-radius: 4px;
+                padding: 5px 10px;
+                background-color: white;
+                min-height: 25px;
+            }
+            QComboBox:hover {
+                border-color: #3498db;
+            }
+            QComboBox:focus {
+                border-color: #3498db;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 20px;
+            }
+            QComboBox::down-arrow {
+                width: 0;
+                height: 0;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 6px solid #636e72;
+                margin-right: 8px;
+            }
+            QComboBox QAbstractItemView {
+                border: 1px solid #dcdde1;
+                selection-background-color: #3498db;
+                selection-color: white;
+                background-color: white;
+            }
+        """)
         self.headers_template_combo.currentTextChanged.connect(self.on_header_template_changed)
         
         # 添加Content-Type选择
         self.content_type_combo = QComboBox()
         self.content_type_combo.addItems(list(self.CONTENT_TYPES.keys()))
         self.content_type_combo.setFixedWidth(200)
+        self.content_type_combo.setFont(QFont("Segoe UI", 10))
+        self.content_type_combo.setStyleSheet("""
+            QComboBox {
+                border: 1px solid #dcdde1;
+                border-radius: 4px;
+                padding: 5px 10px;
+                background-color: white;
+                min-height: 25px;
+            }
+            QComboBox:hover {
+                border-color: #3498db;
+            }
+            QComboBox:focus {
+                border-color: #3498db;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 20px;
+            }
+            QComboBox::down-arrow {
+                width: 0;
+                height: 0;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 6px solid #636e72;
+                margin-right: 8px;
+            }
+            QComboBox QAbstractItemView {
+                border: 1px solid #dcdde1;
+                selection-background-color: #3498db;
+                selection-color: white;
+                background-color: white;
+            }
+        """)
         self.content_type_combo.currentTextChanged.connect(self.on_content_type_changed)
         
         headers_label_layout.addWidget(headers_label)
