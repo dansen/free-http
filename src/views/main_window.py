@@ -24,7 +24,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         
         self.setWindowTitle(f"Free Http v{VERSION}")
-        self.resize(1200, 800)
+        self.resize(1360, 960)
         
         # 创建状态栏
         self.statusBar().showMessage("Ready")
@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
         self.splitter.addWidget(right_widget)
         
         # 设置分割器的初始大小
-        self.splitter.setSizes([300, 900])  # 左侧宽度300，右侧宽度900
+        self.splitter.setSizes([300, 980])  # 左侧宽度300，右侧宽度980
         
         # 创建菜单栏
         self.create_menu_bar()
