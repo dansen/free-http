@@ -92,6 +92,12 @@ class MainWindow(QMainWindow):
         file_menu = menubar.addMenu("File")
         edit_menu = menubar.addMenu("Edit")
         
+        # 添加退出菜单项到File菜单
+        exit_action = QAction("Exit", self)
+        exit_action.setShortcut("Ctrl+Q")  # 添加快捷键
+        exit_action.triggered.connect(self.close)  # 连接到窗口的close方法
+        file_menu.addAction(exit_action)
+        
         # 添加域名管理菜单项
         domain_action = QAction("Manage Domains", self)
         domain_action.triggered.connect(self.show_domain_dialog)
