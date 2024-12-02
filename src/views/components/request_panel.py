@@ -82,7 +82,51 @@ class RequestPanel(QWidget):
         super().__init__()
         self.current_api_name = None
         self.init_ui()
+        self.setup_auto_save()
         
+    def setup_auto_save(self):
+        """设置自动保存触发器"""
+        # 监听URL变化
+        self.url_input.textChanged.connect(self.auto_save)
+        # 监听方法变化
+        self.method_combo.currentTextChanged.connect(self.auto_save)
+        # 监听headers变化
+        self.headers_input.textChanged.connect(self.auto_save)
+        # 监听body变化
+        self.body_input.textChanged.connect(self.auto_save)
+
+    def auto_save(self):
+        """自动保存当前API"""
+        if not self.current_api_name:
+            return
+
+        method = self.method_combo.currentText()
+        url = self.url_input.text()
+
+        try:
+            headers = json.loads(self.headers_input.toPlainText() or '{}')
+            if not isinstance(headers, dict):
+                return
+        except json.JSONDecodeError:
+            return
+
+        # 验证并解析body
+        body_text = self.body_input.toPlainText()
+        try:
+            if self.is_json_content_type(headers) and body_text:
+                is_valid, _ = self.validate_json(body_text)
+                if not is_valid:
+                    return
+                body = json.loads(body_text) if body_text else {}
+            else:
+                body = {"content": body_text} if body_text else {}
+
+            # 发出保存信号
+            self.save_api.emit(self.current_api_name, method, url, headers, body)
+        except:
+            # 如果保存过程中出现任何错误，静默处理
+            pass
+
     def init_ui(self):
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -140,7 +184,7 @@ Plain text content''')
         body_layout.addWidget(body_label)
         body_layout.addWidget(self.body_input)
         
-        # Send 按钮和 Save 按钮的布局
+        # Send 按钮和 New 按钮的布局
         buttons_layout = QHBoxLayout()
         
         # 新建按钮
@@ -149,12 +193,9 @@ Plain text content''')
         
         self.send_button = QPushButton("Send Request")
         self.send_button.clicked.connect(self.on_send_clicked)
-        self.save_button = QPushButton("Save API")
-        self.save_button.clicked.connect(self.on_save_clicked)
         
         buttons_layout.addWidget(self.new_button)
         buttons_layout.addWidget(self.send_button)
-        buttons_layout.addWidget(self.save_button)
         
         # 添加所有组件到布局
         layout.addLayout(method_layout)
@@ -243,45 +284,6 @@ Plain text content''')
         self.url_input.clear()
         self.headers_input.setText(self.HEADER_TEMPLATES['Default'])
         self.body_input.clear()
-
-    def on_save_clicked(self):
-        """保存当前API到数据库"""
-        if not self.current_api_name:
-            self.show_error("错误", "请先创建新API或选择已有API")
-            return
-
-        method = self.method_combo.currentText()
-        url = self.url_input.text()
-
-        # 验证URL
-        if not url:
-            self.show_error("错误", "请输入URL")
-            return
-
-        # 验证并解析headers
-        try:
-            headers = json.loads(self.headers_input.toPlainText() or '{}')
-            if not isinstance(headers, dict):
-                self.show_error("错误", "Headers 必须是一个 JSON 对象")
-                return
-        except json.JSONDecodeError as e:
-            self.show_error("Headers 格式错误", f"Headers 不是有效的 JSON 格式: {str(e)}")
-            return
-
-        # 验证并解析body
-        body_text = self.body_input.toPlainText()
-        if self.is_json_content_type(headers) and body_text:
-            is_valid, error = self.validate_json(body_text)
-            if not is_valid:
-                self.show_error("Body 格式错误", f"Body 不是有效的 JSON 格式: {error}")
-                return
-            body = json.loads(body_text) if body_text else {}
-        else:
-            # 对于非JSON内容，将body存储为字典格式
-            body = {"content": body_text} if body_text else {}
-
-        # 发出保存信号
-        self.save_api.emit(self.current_api_name, method, url, headers, body)
 
     def load_api(self, api_data):
         """加载API数据到界面"""
