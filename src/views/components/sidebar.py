@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import pyqtSignal, Qt, QTimer
 from PyQt6.QtGui import QCursor, QKeyEvent, QFont
-from models.api_model import ApiModel
+from src.models.api_model import ApiModel
 
 class SideBar(QWidget):
     api_selected = pyqtSignal(dict)  # 发送选中的API数据

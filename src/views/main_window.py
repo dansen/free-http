@@ -5,23 +5,24 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
-from .components.request_panel import RequestPanel
-from .components.response_panel import ResponsePanel
-from .components.loading_spinner import LoadingSpinner
-from .components.icon_sidebar import IconSideBar
-from .components.sidebar import SideBar
-from .dialogs.domain_dialog import DomainDialog
-from models.api_model import ApiModel
-from models.domain_model import DomainModel
-from controllers.request_controller import RequestController
-import asyncio
 import qasync
+
+from src.models.api_model import ApiModel
+from src.models.domain_model import DomainModel
+from src.views.components.request_panel import RequestPanel
+from src.views.components.response_panel import ResponsePanel
+from src.views.components.sidebar import SideBar
+from src.views.components.icon_sidebar import IconSideBar
+from src.views.components.loading_spinner import LoadingSpinner
+from src.views.dialogs.domain_dialog import DomainDialog
+from src.controllers.request_controller import RequestController
+import asyncio
+from src.version import VERSION
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         
-        from src.version import VERSION
         self.setWindowTitle(f"Free Http v{VERSION}")
         self.resize(1200, 800)
         

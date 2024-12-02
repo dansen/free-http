@@ -1,23 +1,24 @@
-import sys
 import os
+import sys
+
+# 添加项目根目录到 Python 路径
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
 from PyQt6.QtWidgets import QApplication
-from views.main_window import MainWindow
+from src.views.main_window import MainWindow
 import qasync
 import asyncio
 
-# 添加src目录到Python路径
-src_path = os.path.dirname(os.path.abspath(__file__))
-if src_path not in sys.path:
-    sys.path.insert(0, os.path.dirname(src_path))
-
 def main():
     app = QApplication(sys.argv)
-    loop = qasync.QEventLoop(app)
-    asyncio.set_event_loop(loop)
-    
     window = MainWindow()
     window.show()
-    
+
+    loop = qasync.QEventLoop(app)
+    asyncio.set_event_loop(loop)
+
     with loop:
         loop.run_forever()
 
