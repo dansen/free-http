@@ -65,6 +65,7 @@ class MainWindow(QMainWindow):
         
         # 创建请求和响应面板
         self.request_panel = RequestPanel()
+        self.request_panel.set_domain_model(self.domain_model)  # Set the domain model
         self.response_panel = ResponsePanel()
         
         # 创建加载动画

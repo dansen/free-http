@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox,
                             QLineEdit, QTextEdit, QPushButton, QLabel, QMessageBox,
-                            QInputDialog)
+                            QInputDialog, QMenu)
 from PyQt6.QtCore import pyqtSignal, QTimer
 from PyQt6.QtGui import QFont
 import json
@@ -85,8 +85,60 @@ class RequestPanel(QWidget):
         self.current_api_name = None
         self.current_api_data = None  # 存储当前API的数据，用于比较变化
         self.allow_auto_save = True  # 控制是否允许自动保存
+        self.domain_model = None  # 域名管理模型
         self.init_ui()
         self.setup_auto_save()
+        
+    def set_domain_model(self, domain_model):
+        """设置域名管理模型"""
+        self.domain_model = domain_model
+        self.refresh_domain_button()
+        
+    def refresh_domain_button(self):
+        """刷新域名按钮文本"""
+        if not self.domain_model:
+            self.domain_button.setText("选择域名")
+            return
+            
+        active_domain = self.domain_model.get_active_domain()
+        if active_domain:
+            self.domain_button.setText(f"{active_domain['name']}")
+        else:
+            self.domain_button.setText("选择域名")
+            
+    def show_domain_menu(self):
+        """显示域名选择菜单"""
+        if not self.domain_model:
+            return
+            
+        menu = QMenu(self)
+        # 添加"无域名"选项
+        no_domain_action = menu.addAction("无域名")
+        no_domain_action.triggered.connect(lambda: self.on_domain_selected(None))
+        menu.addSeparator()
+        
+        # 添加所有域名
+        domains = self.domain_model.get_all_domains()
+        for domain in domains:
+            action = menu.addAction(f"{domain['name']} ({domain['domain']})")
+            action.triggered.connect(lambda checked, d=domain: self.on_domain_selected(d))
+            
+        # 在按钮下方显示菜单
+        menu.exec(self.domain_button.mapToGlobal(self.domain_button.rect().bottomLeft()))
+        
+    def on_domain_selected(self, domain):
+        """当选择域名时"""
+        if domain:
+            self.domain_model.set_active_domain(domain['id'])
+            self.domain_button.setText(domain['name'])
+            self.status_message.emit(f"已设置域名: {domain['name']}", 2000)
+        else:
+            # 清除活动域名
+            domains = self.domain_model.get_all_domains()
+            if domains:
+                self.domain_model.set_active_domain(None)
+            self.domain_button.setText("选择域名")
+            self.status_message.emit("已清除域名", 2000)
         
     def setup_auto_save(self):
         """设置自动保存触发器"""
@@ -182,6 +234,28 @@ class RequestPanel(QWidget):
         code_font.setPointSize(10)
         button_font = QFont("Segoe UI", 10)
 
+        # 域名选择按钮
+        self.domain_button = QPushButton("选择域名")
+        self.domain_button.setFont(button_font)
+        self.domain_button.setFixedWidth(120)
+        self.domain_button.setStyleSheet("""
+            QPushButton {
+                border: 1px solid #dcdde1;
+                border-radius: 4px;
+                padding: 4px 8px;
+                min-height: 28px;
+                background-color: white;
+                text-align: left;
+            }
+            QPushButton:hover {
+                border-color: #3498db;
+            }
+            QPushButton:pressed {
+                background-color: #f8f9fa;
+            }
+        """)
+        self.domain_button.clicked.connect(self.show_domain_menu)
+        
         # HTTP 方法选择和 URL 输入
         method_layout = QHBoxLayout()
         self.method_combo = QComboBox()
@@ -223,6 +297,7 @@ class RequestPanel(QWidget):
         """)
         self.url_input.setPlaceholderText('https://api.example.com/v1/resource')
         
+        method_layout.addWidget(self.domain_button)
         method_layout.addWidget(self.method_combo)
         method_layout.addWidget(self.url_input)
         
