@@ -128,9 +128,23 @@ class RequestPanel(QWidget):
         
     def on_domain_selected(self, domain):
         """当选择域名时"""
+        current_url = self.url_input.text()
+        
         if domain:
             self.domain_model.set_active_domain(domain['id'])
             self.domain_button.setText(domain['name'])
+            
+            # 更新URL
+            if current_url.startswith('http://') or current_url.startswith('https://'):
+                # 如果是完整URL，保持不变
+                pass
+            else:
+                # 如果是相对路径，添加域名
+                # 移除开头的斜杠以避免双斜杠
+                if current_url.startswith('/'):
+                    current_url = current_url[1:]
+                self.url_input.setText(f"{domain['domain']}/{current_url}")
+            
             self.status_message.emit(f"已设置域名: {domain['name']}", 2000)
         else:
             # 清除活动域名
@@ -138,6 +152,16 @@ class RequestPanel(QWidget):
             if domains:
                 self.domain_model.set_active_domain(None)
             self.domain_button.setText("选择域名")
+            
+            # 如果URL包含当前域名，则移除域名部分
+            active_domain = self.domain_model.get_active_domain()
+            if active_domain and current_url.startswith(active_domain['domain']):
+                relative_path = current_url[len(active_domain['domain']):]
+                # 确保路径以斜杠开头
+                if not relative_path.startswith('/'):
+                    relative_path = '/' + relative_path
+                self.url_input.setText(relative_path)
+            
             self.status_message.emit("已清除域名", 2000)
         
     def setup_auto_save(self):
