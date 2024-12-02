@@ -25,6 +25,9 @@ class DomainModel:
             
     def add_domain(self, name, domain):
         """添加新域名"""
+        # 移除域名末尾的斜杠
+        domain = domain.rstrip('/')
+        
         with sqlite3.connect(str(self.db_path)) as conn:
             cursor = conn.cursor()
             cursor.execute('INSERT INTO domains (name, domain) VALUES (?, ?)',
@@ -34,6 +37,9 @@ class DomainModel:
             
     def update_domain(self, id, name, domain):
         """更新域名"""
+        # 移除域名末尾的斜杠
+        domain = domain.rstrip('/')
+        
         with sqlite3.connect(str(self.db_path)) as conn:
             cursor = conn.cursor()
             cursor.execute('UPDATE domains SET name = ?, domain = ? WHERE id = ?',
