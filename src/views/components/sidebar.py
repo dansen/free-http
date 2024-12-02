@@ -1,12 +1,15 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QListWidget, 
-    QListWidgetItem, QSizePolicy
+    QListWidgetItem, QSizePolicy, QMenu,
+    QMessageBox
 )
 from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtGui import QCursor
 from models.api_model import ApiModel
 
 class SideBar(QWidget):
     api_selected = pyqtSignal(dict)  # 发送选中的API数据
+    api_deleted = pyqtSignal(str)    # 发送被删除的API名称
 
     def __init__(self):
         super().__init__()
@@ -27,9 +30,45 @@ class SideBar(QWidget):
         # 列表项点击事件
         self.list_widget.itemClicked.connect(self.on_list_item_clicked)
         
+        # 添加右键菜单
+        self.list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.list_widget.customContextMenuRequested.connect(self.show_context_menu)
+        
         # 加载API列表
         self.load_api_list()
 
+    def show_context_menu(self, position):
+        """显示右键菜单"""
+        item = self.list_widget.itemAt(position)
+        if item is None:
+            return
+
+        menu = QMenu()
+        delete_action = menu.addAction("Delete")
+        action = menu.exec(QCursor.pos())
+        
+        if action == delete_action:
+            self.delete_api(item)
+
+    def delete_api(self, item):
+        """删除选中的API"""
+        api_name = item.text()
+        api_id = item.data(Qt.ItemDataRole.UserRole)
+        
+        # 确认对话框
+        reply = QMessageBox.question(
+            self, 'Delete API',
+            f'Are you sure you want to delete "{api_name}"?',
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            if self.api_model.delete_api(api_id):
+                row = self.list_widget.row(item)
+                self.list_widget.takeItem(row)
+                self.api_deleted.emit(api_name)
+                
     def load_api_list(self):
         """从数据库加载API列表"""
         self.list_widget.clear()

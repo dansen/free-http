@@ -7,6 +7,7 @@ import json
 class RequestPanel(QWidget):
     send_request = pyqtSignal(str, str, dict, str)
     save_api = pyqtSignal(str, str, str, dict, dict)  # name, method, url, headers, body
+    api_deleted = pyqtSignal(str)  # name
     
     # 常用 Content-Type
     CONTENT_TYPES = {
@@ -299,3 +300,16 @@ Plain text content''')
                 self.body_input.setText(json.dumps(body, indent=4))
         else:
             self.body_input.setText(str(body) if body else '')
+
+    def clear_api(self):
+        """清空当前API信息"""
+        self.current_api_name = None
+        self.method_combo.setCurrentText('GET')
+        self.url_input.clear()
+        self.headers_input.setText(self.HEADER_TEMPLATES['Default'])
+        self.body_input.clear()
+
+    def on_api_deleted(self, api_name):
+        """当API被删除时，如果是当前API则清空界面"""
+        if api_name == self.current_api_name:
+            self.clear_api()

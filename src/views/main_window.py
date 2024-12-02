@@ -70,6 +70,7 @@ class MainWindow(QMainWindow):
         self.request_panel.send_request.connect(self.handle_request)
         self.request_panel.save_api.connect(self.api_sidebar.add_api)
         self.api_sidebar.api_selected.connect(self.request_panel.load_api)
+        self.api_sidebar.api_deleted.connect(self.request_panel.on_api_deleted)
 
     @qasync.asyncSlot(str, str, dict, str)
     async def handle_request(self, method, url, headers, body):

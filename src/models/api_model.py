@@ -81,3 +81,11 @@ class ApiModel:
                     'body': json.loads(row[5]) if row[5] else {}
                 }
             return None
+
+    def delete_api(self, api_id):
+        """删除指定ID的API"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM apis WHERE id = ?', (api_id,))
+            conn.commit()
+            return cursor.rowcount > 0  # 返回是否删除成功
