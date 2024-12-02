@@ -142,9 +142,10 @@ class RequestPanel(QWidget):
                 parsed_url = urlparse(current_url)
                 if not parsed_url.scheme and not current_url.startswith('http'):
                     # 如果是相对路径，直接拼接
-                    if current_url.startswith('/'):
-                        current_url = current_url[1:]
-                    self.url_input.setText(f"{domain['domain']}/{current_url}")
+                    # 处理域名末尾和路径开头的斜杠
+                    domain_part = domain['domain'].rstrip('/')
+                    path_part = current_url.lstrip('/')
+                    self.url_input.setText(f"{domain_part}/{path_part}" if path_part else domain_part)
                 else:
                     # 如果是完整URL，替换协议、主机和端口部分
                     if not parsed_url.scheme:
@@ -158,18 +159,18 @@ class RequestPanel(QWidget):
                     if parsed_url.fragment:
                         path += '#' + parsed_url.fragment
                     
-                    # 确保路径以斜杠开头
-                    if not path.startswith('/'):
-                        path = '/' + path
+                    # 处理域名末尾和路径的斜杠
+                    domain_part = domain['domain'].rstrip('/')
+                    path_part = path.lstrip('/')
                     
                     # 拼接新URL
-                    if path == '/':
-                        self.url_input.setText(domain['domain'])
+                    if not path_part:
+                        self.url_input.setText(domain_part)
                     else:
-                        # 移除开头的斜杠以避免双斜杠
-                        if path.startswith('/'):
-                            path = path[1:]
-                        self.url_input.setText(f"{domain['domain']}/{path}")
+                        self.url_input.setText(f"{domain_part}/{path_part}")
+            else:
+                # URL为空时直接使用域名
+                self.url_input.setText(domain['domain'].rstrip('/'))
             
             self.status_message.emit(f"已设置域名: {domain['name']}", 2000)
         else:
@@ -183,14 +184,10 @@ class RequestPanel(QWidget):
             if current_url:
                 active_domain = self.domain_model.get_active_domain()
                 if active_domain:
-                    domain_url = active_domain['domain']
+                    domain_url = active_domain['domain'].rstrip('/')
                     if current_url.startswith(domain_url):
-                        path = current_url[len(domain_url):]
-                        if not path:
-                            path = '/'
-                        elif not path.startswith('/'):
-                            path = '/' + path
-                        self.url_input.setText(path)
+                        path = current_url[len(domain_url):].lstrip('/')
+                        self.url_input.setText(f"/{path}" if path else "/")
             
             self.status_message.emit("已清除域名", 2000)
         
