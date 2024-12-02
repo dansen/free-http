@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox,
                             QLineEdit, QTextEdit, QPushButton, QLabel, QMessageBox,
                             QInputDialog)
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal, QTimer
 import json
 
 class RequestPanel(QWidget):
@@ -83,6 +83,7 @@ class RequestPanel(QWidget):
         super().__init__()
         self.current_api_name = None
         self.current_api_data = None  # 存储当前API的数据，用于比较变化
+        self.allow_auto_save = True  # 控制是否允许自动保存
         self.init_ui()
         self.setup_auto_save()
         
@@ -99,7 +100,7 @@ class RequestPanel(QWidget):
 
     def auto_save(self):
         """自动保存当前API"""
-        if not self.current_api_name:
+        if not self.current_api_name or not self.allow_auto_save:
             return
 
         method = self.method_combo.currentText()
@@ -313,6 +314,9 @@ Plain text content''')
     
     def load_api(self, api_data):
         """加载API数据到界面"""
+        # 暂时禁用自动保存
+        self.allow_auto_save = False
+        
         self.current_api_name = api_data['name']
         self.current_api_data = {
             'method': api_data['method'],
@@ -333,17 +337,25 @@ Plain text content''')
             else:
                 # JSON内容，格式化显示
                 self.body_input.setText(json.dumps(body, indent=4))
-        else:
-            self.body_input.setText(str(body) if body else '')
+        
+        # 重新启用自动保存
+        QTimer.singleShot(100, self.enable_auto_save)
+    
+    def enable_auto_save(self):
+        """重新启用自动保存"""
+        print("[Auto Save] Auto save enabled")
+        self.allow_auto_save = True
 
     def clear_api(self):
         """清空当前API信息"""
+        self.allow_auto_save = False
         self.current_api_name = None
         self.current_api_data = None
         self.method_combo.setCurrentText('GET')
         self.url_input.clear()
         self.headers_input.setText(self.HEADER_TEMPLATES['Default'])
         self.body_input.clear()
+        self.allow_auto_save = True
 
     def on_api_deleted(self, api_name):
         """当API被删除时，如果是当前API则清空界面"""
