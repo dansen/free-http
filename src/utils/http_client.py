@@ -33,10 +33,22 @@ class HttpClient:
                     return {'status': status, 'text': text}
                     
         except aiohttp.ClientSSLError as e:
-            raise Exception(f"SSL 证书验证失败: {str(e)}")
+            return {
+                'status': 495,  # SSL Certificate Error
+                'text': f"SSL 证书验证失败: {str(e)}"
+            }
         except asyncio.TimeoutError:
-            raise Exception("请求超时")
+            return {
+                'status': 408,  # Request Timeout
+                'text': f"请求超时 (超过 {self.timeout} 秒)"
+            }
         except aiohttp.ClientConnectorError:
-            raise Exception("连接错误，请检查网络或URL是否正确")
+            return {
+                'status': 503,  # Service Unavailable
+                'text': "连接错误，请检查网络或URL是否正确"
+            }
         except Exception as e:
-            raise Exception(f"请求失败: {str(e)}") 
+            return {
+                'status': 500,  # Internal Server Error
+                'text': f"请求失败: {str(e)}"
+            }
