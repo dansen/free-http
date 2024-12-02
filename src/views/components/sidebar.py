@@ -35,6 +35,7 @@ class SideBar(QWidget):
 
         # 列表项点击事件
         self.list_widget.itemClicked.connect(self.on_list_item_clicked)
+        self.list_widget.itemDoubleClicked.connect(self.rename_api)
         
         # 添加右键菜单
         self.list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
