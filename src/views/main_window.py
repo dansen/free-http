@@ -105,12 +105,32 @@ class MainWindow(QMainWindow):
         
     @qasync.asyncSlot(str, str, dict, str)
     async def handle_request(self, method, url, headers, body):
+        """处理API请求"""
+        # 显示加载动画
         self.loading_spinner.start()
+        
+        # 重置响应面板状态
+        self.response_panel.update_response({
+            'status': 0,
+            'status_text': 'Sending Request...',
+            'headers': {},
+            'text': ''
+        })
+        
         try:
+            # 发送请求
             response = await self.controller.send_request(method, url, headers, body)
+            
             if response:
-                self.response_panel.update_response(response)
+                # 更新响应面板
+                self.response_panel.update_response({
+                    'status': response.get('status', 'Unknown'),
+                    'status_text': response.get('status_text', ''),
+                    'headers': response.get('headers', {}),
+                    'text': response.get('text', '')
+                })
         finally:
+            # 停止加载动画
             self.loading_spinner.stop()
 
     def resizeEvent(self, event):
