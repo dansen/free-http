@@ -20,7 +20,9 @@ import qasync
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Free Http")
+        
+        from src.version import VERSION
+        self.setWindowTitle(f"Free Http v{VERSION}")
         self.resize(1200, 800)
         
         # 创建状态栏
