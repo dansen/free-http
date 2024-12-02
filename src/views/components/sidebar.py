@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QInputDialog, QPushButton
 )
 from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtGui import QCursor, QKeyEvent
+from PyQt6.QtGui import QCursor, QKeyEvent, QFont
 from models.api_model import ApiModel
 
 class SideBar(QWidget):
@@ -32,6 +32,20 @@ class SideBar(QWidget):
         # 列表展示区域
         self.list_widget = QListWidget()
         self.list_widget.keyPressEvent = self.handle_key_press
+        
+        # 设置更大的字体
+        list_font = QFont("Segoe UI, Arial")
+        list_font.setPointSize(11)
+        self.list_widget.setFont(list_font)
+        
+        # 设置项目高度
+        self.list_widget.setStyleSheet("""
+            QListWidget::item {
+                padding: 5px;
+                min-height: 25px;
+            }
+        """)
+        
         layout.addWidget(self.list_widget)
 
         # 列表项点击事件

@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox,
                             QLineEdit, QTextEdit, QPushButton, QLabel, QMessageBox,
                             QInputDialog)
 from PyQt6.QtCore import pyqtSignal, QTimer
+from PyQt6.QtGui import QFont
 import json
 
 class RequestPanel(QWidget):
@@ -176,11 +177,16 @@ class RequestPanel(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
         
+        # 创建等宽编程字体
+        code_font = QFont("Consolas, Courier New, monospace")
+        code_font.setPointSize(10)
+
         # HTTP 方法选择和 URL 输入
         method_layout = QHBoxLayout()
         self.method_combo = QComboBox()
         self.method_combo.addItems(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'])
         self.url_input = QLineEdit()
+        self.url_input.setFont(code_font)
         self.url_input.setPlaceholderText('https://api.example.com/v1/resource')
         method_layout.addWidget(self.method_combo)
         method_layout.addWidget(self.url_input)
@@ -195,6 +201,7 @@ class RequestPanel(QWidget):
         headers_layout.addWidget(self.headers_template_combo)
         
         self.headers_input = QTextEdit()
+        self.headers_input.setFont(code_font)
         self.headers_input.setMaximumHeight(100)
         self.headers_input.setPlaceholderText('{"Content-Type": "application/json"}')
         
@@ -211,6 +218,7 @@ class RequestPanel(QWidget):
         body_layout = QVBoxLayout()
         body_label = QLabel("Request Body:")
         self.body_input = QTextEdit()
+        self.body_input.setFont(code_font)
         self.body_input.setPlaceholderText('''// JSON 示例
 {
     "key": "value",
