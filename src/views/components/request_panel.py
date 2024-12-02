@@ -1,14 +1,14 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox,
                             QLineEdit, QTextEdit, QPushButton, QLabel, QMessageBox,
-                            QInputDialog, QMenu)
+                            QInputDialog, QMenu, QSpinBox)
 from PyQt6.QtCore import pyqtSignal, QTimer
 from PyQt6.QtGui import QFont
 import json
 from urllib.parse import urlparse, urljoin
 
 class RequestPanel(QWidget):
-    send_request = pyqtSignal(str, str, dict, str)
-    save_api = pyqtSignal(str, str, str, dict, dict)  # name, method, url, headers, body
+    send_request = pyqtSignal(str, str, dict, str, int)
+    save_api = pyqtSignal(str, str, str, dict, dict, int)  # name, method, url, headers, body, timeout
     api_deleted = pyqtSignal(str)  # name
     api_renamed = pyqtSignal(str, str)  # old_name, new_name
     status_message = pyqtSignal(str, int)  # message, timeout
@@ -194,13 +194,26 @@ class RequestPanel(QWidget):
     def setup_auto_save(self):
         """设置自动保存触发器"""
         # 监听URL变化
-        self.url_input.textChanged.connect(self.auto_save)
+        self.url_input.textChanged.connect(self.trigger_auto_save)
         # 监听方法变化
-        self.method_combo.currentTextChanged.connect(self.auto_save)
+        self.method_combo.currentTextChanged.connect(self.trigger_auto_save)
         # 监听headers变化
-        self.headers_input.textChanged.connect(self.auto_save)
+        self.headers_input.textChanged.connect(self.trigger_auto_save)
         # 监听body变化
-        self.body_input.textChanged.connect(self.auto_save)
+        self.body_input.textChanged.connect(self.trigger_auto_save)
+        # 监听超时时间变化
+        self.timeout_spinbox.valueChanged.connect(self.trigger_auto_save)
+
+    def trigger_auto_save(self):
+        """触发自动保存"""
+        if not self.current_api_name or not self.allow_auto_save:
+            return
+
+        # 触发自动保存
+        self.save_timer = QTimer()
+        self.save_timer.setSingleShot(True)  # 单次触发
+        self.save_timer.timeout.connect(self.auto_save)
+        self.save_timer.start(500)  # 500毫秒后触发
 
     def auto_save(self):
         """自动保存当前API"""
@@ -231,19 +244,23 @@ class RequestPanel(QWidget):
             else:
                 body = {"content": body_text} if body_text else {}
 
+            # 获取超时设置
+            timeout = self.timeout_spinbox.value()
+
             # 检查数据是否有变化
             current_data = {
                 'method': method,
                 'url': url,
                 'headers': headers,
-                'body': body
+                'body': body,
+                'timeout': timeout
             }
             
             if self.current_api_data and self.is_data_equal(current_data, self.current_api_data):
                 return
 
             # 发出保存信号
-            self.save_api.emit(self.current_api_name, method, url, headers, body)
+            self.save_api.emit(self.current_api_name, method, url, headers, body, timeout)
             self.current_api_data = current_data.copy()  # 更新当前数据
             self.status_message.emit("API saved", 1000)
         except Exception as e:
@@ -271,6 +288,10 @@ class RequestPanel(QWidget):
             print("[Data Compare] Body changed:")
             print(f"Old body: {json.dumps(data1['body'], indent=2)}")
             print(f"New body: {json.dumps(data2['body'], indent=2)}")
+            return False
+            
+        if data1['timeout'] != data2['timeout']:
+            print(f"[Data Compare] Timeout changed: {data1['timeout']} -> {data2['timeout']}")
             return False
             
         print("[Data Compare] No changes detected")
@@ -310,7 +331,23 @@ class RequestPanel(QWidget):
         # 创建域名按钮布局
         domain_layout = QHBoxLayout()
         domain_layout.addWidget(self.domain_button)
+        
+        # 添加超时设置
+        timeout_layout = QHBoxLayout()
+        timeout_label = QLabel("超时时间(秒):")
+        self.timeout_spinbox = QSpinBox()
+        self.timeout_spinbox.setMinimum(1)
+        self.timeout_spinbox.setMaximum(300)  # 最大300秒
+        self.timeout_spinbox.setValue(30)  # 默认30秒
+        self.timeout_spinbox.setFixedWidth(70)
+        timeout_layout.addWidget(timeout_label)
+        timeout_layout.addWidget(self.timeout_spinbox)
+        timeout_layout.addStretch()
+        
+        # 将超时设置添加到域名布局中
+        domain_layout.addLayout(timeout_layout)
         domain_layout.addStretch()
+        
         main_layout.addLayout(domain_layout)
         
         # HTTP 方法选择和 URL 输入
@@ -513,7 +550,10 @@ Plain text content''')
                 self.show_error("Body 格式错误", f"Body 不是有效的 JSON 格式: {error}")
                 return
         
-        self.send_request.emit(method, url, headers, body) 
+        # 获取超时时间
+        timeout = self.timeout_spinbox.value()
+        
+        self.send_request.emit(method, url, headers, body, timeout)
     
     def load_api(self, api_data):
         """加载API数据到界面"""
@@ -525,11 +565,18 @@ Plain text content''')
             'method': api_data['method'],
             'url': api_data['url'],
             'headers': api_data['headers'],
-            'body': api_data['body']
+            'body': api_data['body'],
+            'timeout': api_data['timeout']
         }
+        
+        # 设置基本字段
         self.method_combo.setCurrentText(api_data['method'])
         self.url_input.setText(api_data['url'])
         self.headers_input.setText(json.dumps(api_data['headers'], indent=4))
+        
+        # 设置超时时间
+        timeout = api_data.get('timeout', 30)  # 如果没有timeout字段，使用默认值30
+        self.timeout_spinbox.setValue(int(timeout))  # 确保是整数
         
         # 处理body的显示
         body = api_data['body']

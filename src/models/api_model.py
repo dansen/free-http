@@ -11,20 +11,62 @@ class ApiModel:
     def init_db(self):
         with sqlite3.connect(str(self.db_path)) as conn:
             cursor = conn.cursor()
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS apis (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL UNIQUE,
-                    method TEXT NOT NULL,
-                    url TEXT NOT NULL,
-                    headers TEXT,
-                    body TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+            
+            # 检查是否存在旧表
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='apis'")
+            table_exists = cursor.fetchone() is not None
+            
+            if table_exists:
+                # 检查是否有 timeout 列
+                cursor.execute("PRAGMA table_info(apis)")
+                columns = cursor.fetchall()
+                has_timeout = any(col[1] == 'timeout' for col in columns)
+                
+                if not has_timeout:
+                    # 备份旧表
+                    cursor.execute("ALTER TABLE apis RENAME TO apis_backup")
+                    
+                    # 创建新表
+                    cursor.execute('''
+                        CREATE TABLE apis (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            name TEXT UNIQUE NOT NULL,
+                            method TEXT NOT NULL,
+                            url TEXT NOT NULL,
+                            headers TEXT,
+                            body TEXT,
+                            timeout INTEGER DEFAULT 30,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+                    
+                    # 迁移数据
+                    cursor.execute('''
+                        INSERT INTO apis (id, name, method, url, headers, body, created_at)
+                        SELECT id, name, method, url, headers, body, created_at
+                        FROM apis_backup
+                    ''')
+                    
+                    # 删除旧表
+                    cursor.execute("DROP TABLE apis_backup")
+            else:
+                # 创建新表
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS apis (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT UNIQUE NOT NULL,
+                        method TEXT NOT NULL,
+                        url TEXT NOT NULL,
+                        headers TEXT,
+                        body TEXT,
+                        timeout INTEGER DEFAULT 30,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+            
             conn.commit()
 
-    def save_api(self, name, method, url, headers=None, body=None):
+    def save_api(self, name, method, url, headers=None, body=None, timeout=30):
         with sqlite3.connect(str(self.db_path)) as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT id FROM apis WHERE name = ?', (name,))
@@ -33,20 +75,22 @@ class ApiModel:
             if existing:
                 cursor.execute('''
                     UPDATE apis 
-                    SET method = ?, url = ?, headers = ?, body = ?
+                    SET method = ?, url = ?, headers = ?, body = ?, timeout = ?
                     WHERE name = ?
                 ''', (method, url, 
                       json.dumps(headers) if headers else None,
                       json.dumps(body) if body else None,
+                      timeout,
                       name))
                 api_id = existing[0]
             else:
                 cursor.execute('''
-                    INSERT INTO apis (name, method, url, headers, body)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO apis (name, method, url, headers, body, timeout)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 ''', (name, method, url, 
                       json.dumps(headers) if headers else None,
-                      json.dumps(body) if body else None))
+                      json.dumps(body) if body else None,
+                      timeout))
                 api_id = cursor.lastrowid
             
             conn.commit()
@@ -55,7 +99,11 @@ class ApiModel:
     def get_all_apis(self):
         with sqlite3.connect(str(self.db_path)) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT * FROM apis ORDER BY created_at DESC')
+            cursor.execute('''
+                SELECT id, name, method, url, headers, body, timeout 
+                FROM apis 
+                ORDER BY created_at DESC
+            ''')
             rows = cursor.fetchall()
             return [{
                 'id': row[0],
@@ -63,13 +111,18 @@ class ApiModel:
                 'method': row[2],
                 'url': row[3],
                 'headers': json.loads(row[4]) if row[4] else {},
-                'body': json.loads(row[5]) if row[5] else {}
+                'body': json.loads(row[5]) if row[5] else {},
+                'timeout': int(row[6]) if row[6] is not None else 30
             } for row in rows]
 
     def get_api_by_id(self, api_id):
         with sqlite3.connect(str(self.db_path)) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT * FROM apis WHERE id = ?', (api_id,))
+            cursor.execute('''
+                SELECT id, name, method, url, headers, body, timeout 
+                FROM apis 
+                WHERE id = ?
+            ''', (api_id,))
             row = cursor.fetchone()
             if row:
                 return {
@@ -78,7 +131,8 @@ class ApiModel:
                     'method': row[2],
                     'url': row[3],
                     'headers': json.loads(row[4]) if row[4] else {},
-                    'body': json.loads(row[5]) if row[5] else {}
+                    'body': json.loads(row[5]) if row[5] else {},
+                    'timeout': int(row[6]) if row[6] is not None else 30
                 }
             return None
 

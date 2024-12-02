@@ -62,8 +62,8 @@ class MainWindow(QMainWindow):
         right_layout = QVBoxLayout()
         right_widget.setLayout(right_layout)
         
-        # 创建控制器，设置 60 秒超时时间
-        self.controller = RequestController(timeout=60)
+        # 创建控制器
+        self.controller = RequestController()
         
         # 创建请求和响应面板
         self.request_panel = RequestPanel()
@@ -105,8 +105,8 @@ class MainWindow(QMainWindow):
         domain_action.triggered.connect(self.show_domain_dialog)
         edit_menu.addAction(domain_action)
         
-    @qasync.asyncSlot(str, str, dict, str)
-    async def handle_request(self, method, url, headers, body):
+    @qasync.asyncSlot(str, str, dict, str, int)
+    async def handle_request(self, method, url, headers, body, timeout):
         """处理API请求"""
         # 显示加载动画
         self.loading_spinner.start()
@@ -121,7 +121,7 @@ class MainWindow(QMainWindow):
         
         try:
             # 发送请求
-            response = await self.controller.send_request(method, url, headers, body)
+            response = await self.controller.send_request(method, url, headers, body, timeout)
             
             if response:
                 # 更新响应面板

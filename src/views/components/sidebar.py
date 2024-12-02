@@ -167,16 +167,33 @@ class SideBar(QWidget):
             self.list_widget.addItem(item)
 
     def on_list_item_clicked(self, item):
-        """当API列表项被点击时触发"""
+        """当列表项被点击时"""
         api_id = item.data(Qt.ItemDataRole.UserRole)
         api_data = self.api_model.get_api_by_id(api_id)
         if api_data:
+            # 发出API被选中的信号
             self.api_selected.emit(api_data)
 
-    def add_api(self, name, method, url, headers, body):
-        """添加新的API到列表"""
-        api_id = self.api_model.save_api(name, method, url, headers, body)
-        self.load_api_list()  # 重新加载列表
+    def add_api(self, name, method, url, headers, body, timeout):
+        """添加或更新API"""
+        api_id = self.api_model.save_api(
+            name=name,
+            method=method,
+            url=url,
+            headers=headers,
+            body=body,
+            timeout=timeout
+        )
+        
+        # 重新加载列表
+        self.load_api_list()
+        
+        # 找到并选中保存的API项
+        for i in range(self.list_widget.count()):
+            item = self.list_widget.item(i)
+            if item.data(Qt.ItemDataRole.UserRole) == api_id:
+                self.list_widget.setCurrentItem(item)
+                break
 
     def create_new_api(self):
         """创建新的API"""
@@ -202,7 +219,8 @@ class SideBar(QWidget):
                     "Accept": "application/json",
                     "User-Agent": "FreeHttp/1.0"
                 },
-                body={}
+                body={},
+                timeout=30  # 默认30秒超时
             )
             
             # 重新加载列表并选中新创建的API
