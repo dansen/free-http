@@ -1,10 +1,12 @@
 import sqlite3
 import json
 from pathlib import Path
+from src.models.config_model import ConfigModel
 
 class ApiModel:
     def __init__(self):
-        self.db_path = Path.home() / '.free-http' / 'apis.db'
+        config = ConfigModel()
+        self.db_path = Path(config.get_app_data_path()) / 'apis.db'
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.init_db()
 
