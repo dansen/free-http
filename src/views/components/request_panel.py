@@ -193,17 +193,24 @@ class RequestPanel(QWidget):
         
     def setup_auto_save(self):
         """设置自动保存触发器"""
-        # 监听URL变化
+        # URL和方法改变时自动保存
         self.url_input.textChanged.connect(self.trigger_auto_save)
-        # 监听方法变化
         self.method_combo.currentTextChanged.connect(self.trigger_auto_save)
-        # 监听headers变化
-        self.headers_input.textChanged.connect(self.trigger_auto_save)
-        # 监听body变化
-        self.body_input.textChanged.connect(self.trigger_auto_save)
-        # 监听超时时间变化
+        
+        # Headers和Body失去焦点时保存
+        self.headers_input.focusOutEvent = lambda e: self.on_text_focus_lost(e, self.headers_input)
+        self.body_input.focusOutEvent = lambda e: self.on_text_focus_lost(e, self.body_input)
+        
+        # 超时时间改变时自动保存
         self.timeout_input.valueChanged.connect(self.trigger_auto_save)
 
+    def on_text_focus_lost(self, event, editor):
+        """当文本框失去焦点时触发保存"""
+        # 调用父类的focusOutEvent
+        type(editor).focusOutEvent(editor, event)
+        # 触发保存
+        self.auto_save()
+    
     def trigger_auto_save(self):
         """触发自动保存"""
         if not self.current_api_name or not self.allow_auto_save:
@@ -222,6 +229,10 @@ class RequestPanel(QWidget):
 
         method = self.method_combo.currentText()
         url = self.url_input.text()
+
+        # 保存当前光标位置
+        headers_cursor = self.headers_input.textCursor()
+        body_cursor = self.body_input.textCursor()
 
         try:
             headers = json.loads(self.headers_input.toPlainText() or '{}')
@@ -262,6 +273,11 @@ class RequestPanel(QWidget):
             # 发出保存信号
             self.save_api.emit(self.current_api_name, method, url, headers, body, timeout)
             self.current_api_data = current_data.copy()  # 更新当前数据
+            
+            # 恢复光标位置
+            self.headers_input.setTextCursor(headers_cursor)
+            self.body_input.setTextCursor(body_cursor)
+            
             self.status_message.emit("API saved", 1000)
         except Exception as e:
             self.status_message.emit(f"Failed to save API: {str(e)}", 3000)
