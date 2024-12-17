@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox,
+from PyQt6.QtWidgets import (QPlainTextEdit, QWidget, QVBoxLayout, QHBoxLayout, QComboBox,
                             QLineEdit, QTextEdit, QPushButton, QLabel, QMessageBox,
                             QInputDialog, QMenu, QSpinBox)
 from PyQt6.QtCore import pyqtSignal, QTimer
@@ -537,7 +537,7 @@ class RequestPanel(QWidget):
         headers_label_layout.addWidget(self.content_type_combo)
         headers_label_layout.addStretch()
         
-        self.headers_input = QTextEdit()
+        self.headers_input = QPlainTextEdit()
         self.headers_input.setFont(code_font)
         self.headers_input.setMinimumHeight(120)  # 增加headers区域的最小高度
         self.headers_input.setStyleSheet("""
@@ -560,7 +560,7 @@ class RequestPanel(QWidget):
         # Body
         body_layout = QVBoxLayout()
         body_label = QLabel("Request Body:")
-        self.body_input = QTextEdit()
+        self.body_input = QPlainTextEdit()
         self.body_input.setFont(code_font)
         self.body_input.setMinimumHeight(200)
         self.body_input.setPlaceholderText('''// JSON 示例
@@ -615,21 +615,21 @@ Plain text content''')
         main_layout.addLayout(buttons_layout)
         
         # 设置默认 headers
-        self.headers_input.setText(self.HEADER_TEMPLATES['Default'])
+        self.headers_input.setPlainText(self.HEADER_TEMPLATES['Default'])
         
     def on_header_template_changed(self, template_name):
         """当选择 headers 模板时更新 headers 输入框"""
-        self.headers_input.setText(self.HEADER_TEMPLATES[template_name])
+        self.headers_input.setPlainText(self.HEADER_TEMPLATES[template_name])
         
     def on_content_type_changed(self, content_type):
         """当选择 Content-Type 时更新 headers"""
         try:
             current_headers = json.loads(self.headers_input.toPlainText() or '{}')
             current_headers['Content-Type'] = content_type
-            self.headers_input.setText(json.dumps(current_headers, indent=4))
+            self.headers_input.setPlainText(json.dumps(current_headers, indent=4))
         except json.JSONDecodeError:
             # 如果当前 headers 不是有效的 JSON，直接设置新的
-            self.headers_input.setText(self.CONTENT_TYPES[content_type])
+            self.headers_input.setPlainText(self.CONTENT_TYPES[content_type])
     
     def show_error(self, title, message):
         QMessageBox.critical(self, title, message)
@@ -701,7 +701,7 @@ Plain text content''')
         # 设置基本字段
         self.method_combo.setCurrentText(api_data['method'])
         self.url_input.setText(api_data['url'])
-        self.headers_input.setText(json.dumps(api_data['headers'], indent=4))
+        self.headers_input.setPlainText(json.dumps(api_data['headers'], indent=4))
         
         # 设置超时时间
         timeout = api_data.get('timeout', 30)  # 如果没有timeout字段，使用默认值30
@@ -712,10 +712,10 @@ Plain text content''')
         if isinstance(body, dict):
             if 'content' in body and not self.is_json_content_type(api_data['headers']):
                 # 非JSON内容，直接显示content字段
-                self.body_input.setText(body['content'])
+                self.body_input.setPlainText(body['content'])
             else:
                 # JSON内容，格式化显示
-                self.body_input.setText(json.dumps(body, indent=4))
+                self.body_input.setPlainText(json.dumps(body, indent=4))
         
         # 重新启用自动保存
         QTimer.singleShot(100, self.enable_auto_save)
@@ -732,7 +732,7 @@ Plain text content''')
         self.current_api_data = None
         self.method_combo.setCurrentText('GET')
         self.url_input.clear()
-        self.headers_input.setText(self.HEADER_TEMPLATES['Default'])
+        self.headers_input.setPlainText(self.HEADER_TEMPLATES['Default'])
         self.body_input.clear()
         self.allow_auto_save = True
 
