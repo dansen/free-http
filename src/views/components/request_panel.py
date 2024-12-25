@@ -9,7 +9,7 @@ from loguru import logger
 
 class RequestPanel(QWidget):
     send_request = pyqtSignal(str, str, dict, str, int)
-    save_api = pyqtSignal(str, str, str, dict, dict, int)  # name, method, url, headers, body, timeout
+    add_api = pyqtSignal(str, str, str, dict, dict, int)  # name, method, url, headers, body, timeout
     api_deleted = pyqtSignal(str)  # name
     api_renamed = pyqtSignal(str, str)  # old_name, new_name
     status_message = pyqtSignal(str, int)  # message, timeout
@@ -146,6 +146,7 @@ class RequestPanel(QWidget):
                     # 处理域名末尾和路径开头的斜杠
                     domain_part = domain['domain'].rstrip('/')
                     path_part = current_url.lstrip('/')
+                    logger.debug(f"Domain part: {domain_part}")
                     self.url_input.setText(f"{domain_part}/{path_part}" if path_part else domain_part)
                 else:
                     # 如果是完整URL，替换协议、主机和端口部分
@@ -165,11 +166,13 @@ class RequestPanel(QWidget):
                     path_part = path.lstrip('/')
                     
                     # 拼接新URL
+                    logger.debug(f"Domain part: {domain_part}")
                     if not path_part:
                         self.url_input.setText(domain_part)
                     else:
                         self.url_input.setText(f"{domain_part}/{path_part}")
             else:
+                logger.debug("Current URL is empty")
                 # URL为空时直接使用域名
                 self.url_input.setText(domain['domain'].rstrip('/'))
             
@@ -189,6 +192,7 @@ class RequestPanel(QWidget):
                     domain_url = active_domain['domain'].rstrip('/')
                     if current_url.startswith(domain_url):
                         path = current_url[len(domain_url):].lstrip('/')
+                        logger.debug(f"Domain part: {domain_url}")
                         self.url_input.setText(f"/{path}" if path else "/")
             
             logger.info("Clearing URL input")
@@ -274,7 +278,7 @@ class RequestPanel(QWidget):
                 return
 
             # 发出保存信号
-            self.save_api.emit(self.current_api_name, method, url, headers, body, timeout)
+            self.add_api.emit(self.current_api_name, method, url, headers, body, timeout)
             self.current_api_data = current_data.copy()  # 更新当前数据
             
             # 恢复光标位置

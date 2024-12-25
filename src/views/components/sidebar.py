@@ -213,9 +213,6 @@ class SideBar(QWidget):
             timeout=timeout
         )
         
-        # 重新加载列表
-        self.load_api_list()
-        
         # 找到并选中保存的API项
         for i in range(self.list_widget.count()):
             item = self.list_widget.item(i)

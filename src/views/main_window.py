@@ -103,7 +103,7 @@ class MainWindow(QMainWindow):
         
         # 连接信号
         self.request_panel.send_request.connect(self.handle_request)
-        self.request_panel.save_api.connect(self.api_sidebar.add_api)
+        self.request_panel.add_api.connect(self.api_sidebar.add_api)
         self.request_panel.status_message.connect(self.show_status_message)
         
         # 连接 API 侧边栏的信号
