@@ -290,6 +290,6 @@ class MainWindow(QMainWindow):
         """处理历史记录选择事件"""
         self.request_panel.method_combo.setCurrentText(history_data["method"])
         self.request_panel.url_input.setText(history_data["url"])
-        self.request_panel.headers_edit.setPlainText(json.dumps(history_data["headers"], indent=2))
-        self.request_panel.body_edit.setPlainText(json.dumps(history_data["body"], indent=2))
-        self.request_panel.timeout_spinbox.setValue(history_data["timeout"])
+        self.request_panel.headers_input.setPlainText(json.dumps(history_data["headers"], indent=2))
+        self.request_panel.body_input.setPlainText(json.dumps(history_data["body"], indent=2))
+        self.request_panel.timeout_input.setValue(history_data["timeout"])
