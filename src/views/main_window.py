@@ -331,6 +331,15 @@ class MainWindow(QMainWindow):
         logger.info(f"Loading history: {history_data['method']} {history_data['url']}")
         logger.debug(f"History data: {history_data}")
         
+        # 重置响应结果
+        self.response_panel.update_response({
+            'status': 0,
+            'status_text': '',
+            'headers': {},
+            'text': ''
+        })
+        
+        # 加载历史记录数据
         self.request_panel.method_combo.setCurrentText(history_data["method"])
         self.request_panel.url_input.setText(history_data["url"])
         self.request_panel.headers_input.setPlainText(json.dumps(history_data["headers"], indent=2))
