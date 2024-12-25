@@ -17,11 +17,8 @@ def setup_logger():
     # 移除默认的处理器
     logger.remove()
     # 添加新的处理器，使用自定义格式
-    logger.add(
-        sys.stderr,
-        format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}.py:{line} - {message}",
-        level="DEBUG"
-    )
+    if sys.stderr is not None:
+        logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}.py:{line} - {message}", level="DEBUG")
     # 替换模块名中的点号为斜杠
     logger.configure(patcher=lambda record: record.update(name=record["name"].replace(".", "/")))
 

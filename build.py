@@ -22,7 +22,7 @@ def build():
         '--noconfirm',  # 覆盖输出目录
         '--clean',  # 在构建之前清理
         '--onefile',  # 打包成单个文件
-        '--exclude-module=PyQt5',  # 排除 PyQt5
+        '--exclude-module=PyQt6',  # 排除 PyQt6
         '--paths=src',  # 添加源代码目录到Python路径
         '--hidden-import=src.models',  # 添加隐式导入
         '--hidden-import=src.views',
