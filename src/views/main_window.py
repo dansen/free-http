@@ -157,6 +157,25 @@ class MainWindow(QMainWindow):
                     'headers': response.get('headers', {}),
                     'text': response.get('text', '')
                 })
+                
+                # 添加到历史记录
+                try:
+                    headers_dict = json.loads(headers)
+                except:
+                    headers_dict = headers
+                    
+                try:
+                    body_dict = json.loads(body)
+                except:
+                    body_dict = body
+                    
+                self.history_model.add_history(
+                    method=method,
+                    url=url,
+                    headers=headers_dict,
+                    body=body_dict,
+                    timeout=timeout
+                )
         finally:
             # 停止加载动画
             self.loading_spinner.stop()
