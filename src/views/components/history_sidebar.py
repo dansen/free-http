@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetItem,
 from PyQt6.QtCore import pyqtSignal, Qt
 from PyQt6.QtGui import QColor, QFont
 import json
-import logging
+from loguru import logger
 
 class HistoryItem(QWidget):
     def __init__(self, method, url, timestamp, parent=None):
@@ -83,7 +83,7 @@ class HistorySideBar(QWidget):
     
     def __init__(self, history_model):
         super().__init__()
-        self.logger = logging.getLogger(__name__)
+        self.logger = logger
         self.history_model = history_model
         self.init_ui()
         
@@ -107,22 +107,6 @@ class HistorySideBar(QWidget):
         title_layout.addWidget(title_label)
         title_layout.addStretch()
         
-        # 清空按钮
-        self.clear_button = QPushButton("清空")
-        self.clear_button.setStyleSheet("""
-            QPushButton {
-                background: transparent;
-                border: none;
-                color: #666666;
-                padding: 5px;
-            }
-            QPushButton:hover {
-                color: #E53935;
-            }
-        """)
-        self.clear_button.clicked.connect(self.clear_history)
-        title_layout.addWidget(self.clear_button)
-        
         layout.addLayout(title_layout)
         
         # 创建列表控件
@@ -144,6 +128,8 @@ class HistorySideBar(QWidget):
             }
         """)
         self.list_widget.itemClicked.connect(self.on_item_clicked)
+        self.list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.list_widget.customContextMenuRequested.connect(self.show_context_menu)
         layout.addWidget(self.list_widget)
         
         # 加载历史记录
@@ -178,3 +164,23 @@ class HistorySideBar(QWidget):
         self.history_model.clear_history()
         self.refresh_history()
         self.logger.info("History cleared")
+        
+    def show_context_menu(self, pos):
+        """显示右键菜单"""
+        item = self.list_widget.itemAt(pos)
+        if not item:
+            return
+            
+        menu = QMenu(self)
+        delete_action = menu.addAction("删除")
+        
+        # 获取全局坐标
+        global_pos = self.list_widget.mapToGlobal(pos)
+        action = menu.exec(global_pos)
+        
+        if action == delete_action:
+            history_data = item.data(Qt.ItemDataRole.UserRole)
+            if history_data:
+                self.logger.info(f"Deleting history record: {history_data['method']} {history_data['url']}")
+                self.history_model.delete_history(history_data['timestamp'])
+                self.refresh_history()

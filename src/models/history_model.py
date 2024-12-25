@@ -104,3 +104,11 @@ class HistoryModel:
                 self.logger.info("History cleared")
         except Exception as e:
             self.logger.error(f"Failed to clear history: {str(e)}")
+            
+    def delete_history(self, timestamp):
+        """删除指定时间戳的历史记录"""
+        self.logger.info(f"Deleting history record: {timestamp}")
+        with sqlite3.connect(str(self.db_path)) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM history WHERE created_at = ?", (timestamp,))
+            conn.commit()
