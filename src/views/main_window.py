@@ -317,6 +317,20 @@ class MainWindow(QMainWindow):
         self.request_panel.show()
         self.response_panel.show()
         
+        # 重新加载当前API的数据
+        if self.request_panel.current_api_name:
+            logger.info(f"Reloading current API: {self.request_panel.current_api_name}")
+            # 获取当前API数据
+            api_data = self.api_sidebar.get_api_data(self.request_panel.current_api_name)
+            if api_data:
+                # 暂时禁用自动保存
+                self.request_panel.allow_auto_save = False
+                # 重新加载API数据
+                self.request_panel.load_api(api_data)
+                # 重新启用自动保存
+                self.request_panel.allow_auto_save = True
+                logger.debug(f"API data reloaded: {api_data}")
+
     def show_history(self):
         """显示历史记录"""
         logger.debug("Switching to history view")
@@ -339,9 +353,15 @@ class MainWindow(QMainWindow):
             'text': ''
         })
         
+        # 暂时禁用自动保存
+        self.request_panel.allow_auto_save = False
+        
         # 加载历史记录数据
         self.request_panel.method_combo.setCurrentText(history_data["method"])
         self.request_panel.url_input.setText(history_data["url"])
         self.request_panel.headers_input.setPlainText(json.dumps(history_data["headers"], indent=2))
         self.request_panel.body_input.setPlainText(json.dumps(history_data["body"], indent=2))
         self.request_panel.timeout_input.setValue(history_data["timeout"])
+        
+        # 重新启用自动保存
+        self.request_panel.allow_auto_save = True

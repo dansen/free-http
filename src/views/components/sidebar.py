@@ -259,6 +259,14 @@ class SideBar(QWidget):
                     self.on_list_item_clicked(item)
                     break
 
+    def get_api_data(self, api_name):
+        """根据API名称获取API数据"""
+        apis = self.api_model.get_all_apis()
+        for api in apis:
+            if api['name'] == api_name:
+                return api
+        return None
+
     def handle_key_press(self, event: QKeyEvent):
         """处理键盘事件"""
         if event.key() == Qt.Key.Key_F2:
