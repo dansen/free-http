@@ -1,0 +1,14 @@
+[
+  {
+    "method": "POST",
+    "url": "https://lambda.slots-patch.com/api/version/latest/query-version",
+    "headers": {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "User-Agent": "FreeHttp/1.0"
+    },
+    "body": "{\n    \"Channel\": \"store\",\n    \"DeviceType\": \"Android\",\n    \"AppVersion\": \"1.0.0\",\n    \"ResVersion\": \"68\",\n    \"DeviceID\": \"com.jackpot.mania.android|002\",\n    \"Project\": \"Fairy\",\n    \"PackageName\": \"com.casino.fairy.android\"\n}",
+    "timeout": 30,
+    "timestamp": "2024-12-25 15:17:33"
+  }
+]

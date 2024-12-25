@@ -7,13 +7,16 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 import qasync
 import os
+import json
 
 from src.models.api_model import ApiModel
 from src.models.domain_model import DomainModel
 from src.models.config_model import ConfigModel
+from src.models.history_model import HistoryModel
 from src.views.components.request_panel import RequestPanel
 from src.views.components.response_panel import ResponsePanel
 from src.views.components.sidebar import SideBar
+from src.views.components.history_sidebar import HistorySideBar
 from src.views.components.icon_sidebar import IconSideBar
 from src.views.components.loading_spinner import LoadingSpinner
 from src.views.dialogs.domain_dialog import DomainDialog
@@ -42,6 +45,7 @@ class MainWindow(QMainWindow):
         self.api_model = ApiModel()
         self.domain_model = DomainModel()
         self.config_model = ConfigModel()
+        self.history_model = HistoryModel()
         
         self.update_window_title()
         
@@ -57,6 +61,10 @@ class MainWindow(QMainWindow):
         self.icon_sidebar = IconSideBar()
         main_layout.addWidget(self.icon_sidebar)
         
+        # 连接图标侧边栏信号
+        self.icon_sidebar.api_list_clicked.connect(self.show_api_list)
+        self.icon_sidebar.history_list_clicked.connect(self.show_history)
+        
         # 创建分割器
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
         self.splitter.setHandleWidth(1)  # 设置分割线宽度为1像素
@@ -69,6 +77,11 @@ class MainWindow(QMainWindow):
         
         # 创建 API 列表侧边栏
         self.api_sidebar = SideBar()
+        
+        # 创建历史记录侧边栏
+        self.history_sidebar = HistorySideBar(self.history_model)
+        self.history_sidebar.hide()  # 默认隐藏
+        self.history_sidebar.history_selected.connect(self.on_history_selected)
         
         # 创建右侧内容区域
         right_widget = QWidget()
@@ -101,10 +114,11 @@ class MainWindow(QMainWindow):
         
         # 添加组件到分割器
         self.splitter.addWidget(self.api_sidebar)
+        self.splitter.addWidget(self.history_sidebar)
         self.splitter.addWidget(right_widget)
         
         # 设置分割器的初始大小
-        self.splitter.setSizes([300, 980])  # 左侧宽度300，右侧宽度980
+        self.splitter.setSizes([300, 300, 980])  # 左侧宽度300，右侧宽度980
         
         # 创建菜单栏
         self.create_menu_bar()
@@ -161,7 +175,7 @@ class MainWindow(QMainWindow):
         super().showEvent(event)
         # 设置分割器初始大小
         total_width = self.splitter.width()
-        self.splitter.setSizes([300, total_width - 300])
+        self.splitter.setSizes([300, 300, total_width - 600])
 
     def show_status_message(self, message, timeout=3000):
         """在状态栏显示消息
@@ -256,3 +270,26 @@ class MainWindow(QMainWindow):
         """更新窗口标题，显示版本和应用数据路径"""
         app_data_path = self.config_model.get_app_data_path()
         self.setWindowTitle(f"Free Http v{VERSION} - {app_data_path}")
+
+    def show_api_list(self):
+        """显示API列表"""
+        self.api_sidebar.show()
+        self.history_sidebar.hide()
+        self.request_panel.show()
+        self.response_panel.show()
+        
+    def show_history(self):
+        """显示历史记录"""
+        self.api_sidebar.hide()
+        self.history_sidebar.show()
+        self.history_sidebar.refresh_history()
+        self.request_panel.show()
+        self.response_panel.show()
+
+    def on_history_selected(self, history_data):
+        """处理历史记录选择事件"""
+        self.request_panel.method_combo.setCurrentText(history_data["method"])
+        self.request_panel.url_input.setText(history_data["url"])
+        self.request_panel.headers_edit.setPlainText(json.dumps(history_data["headers"], indent=2))
+        self.request_panel.body_edit.setPlainText(json.dumps(history_data["body"], indent=2))
+        self.request_panel.timeout_spinbox.setValue(history_data["timeout"])
