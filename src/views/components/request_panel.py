@@ -5,6 +5,7 @@ from PyQt6.QtCore import pyqtSignal, QTimer
 from PyQt6.QtGui import QFont
 import json
 from urllib.parse import urlparse, urljoin
+from loguru import logger
 
 class RequestPanel(QWidget):
     send_request = pyqtSignal(str, str, dict, str, int)
@@ -172,6 +173,7 @@ class RequestPanel(QWidget):
                 # URL为空时直接使用域名
                 self.url_input.setText(domain['domain'].rstrip('/'))
             
+            logger.info(f"Updating URL from {current_url} to {self.url_input.text()}")
             self.status_message.emit(f"已设置域名: {domain['name']}", 2000)
         else:
             # 清除活动域名
@@ -189,6 +191,7 @@ class RequestPanel(QWidget):
                         path = current_url[len(domain_url):].lstrip('/')
                         self.url_input.setText(f"/{path}" if path else "/")
             
+            logger.info("Clearing URL input")
             self.status_message.emit("已清除域名", 2000)
         
     def setup_auto_save(self):
@@ -716,6 +719,7 @@ Plain text content''')
         
         # 设置基本字段
         self.method_combo.setCurrentText(api_data['method'])
+        logger.info(f"Loading API URL: {api_data['url']}")
         self.url_input.setText(api_data['url'])
         self.headers_input.setPlainText(json.dumps(api_data['headers'], indent=4))
         
@@ -747,6 +751,7 @@ Plain text content''')
         self.current_api_name = None
         self.current_api_data = None
         self.method_combo.setCurrentText('GET')
+        logger.info("Clearing URL input")
         self.url_input.clear()
         self.headers_input.setPlainText(self.HEADER_TEMPLATES['Default'])
         self.body_input.clear()

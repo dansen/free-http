@@ -8,6 +8,7 @@ from PyQt6.QtGui import QAction
 import qasync
 import os
 import json
+from loguru import logger
 
 from src.models.api_model import ApiModel
 from src.models.domain_model import DomainModel
@@ -28,6 +29,8 @@ from PyQt6.QtWidgets import QApplication
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        
+        logger.info("Initializing MainWindow...")
         
         self.setWindowTitle(f"Free Http v{VERSION}")
         self.resize(1360, 960)
@@ -134,6 +137,10 @@ class MainWindow(QMainWindow):
     @qasync.asyncSlot(str, str, dict, str, int)
     async def handle_request(self, method, url, headers, body, timeout):
         """处理API请求"""
+        logger.info(f"Sending request: {method} {url}")
+        logger.debug(f"Request headers: {headers}")
+        logger.debug(f"Request body: {body}")
+        
         # 显示加载动画
         self.loading_spinner.start()
         
@@ -158,6 +165,9 @@ class MainWindow(QMainWindow):
                     'text': response.get('text', '')
                 })
                 
+                logger.info(f"Request completed: {response.get('status', 'Unknown')} {response.get('status_text', '')}")
+                logger.debug(f"Response headers: {response.get('headers', {})}")
+                
                 # 添加到历史记录
                 try:
                     headers_dict = json.loads(headers)
@@ -176,10 +186,19 @@ class MainWindow(QMainWindow):
                     body=body_dict,
                     timeout=timeout
                 )
+                logger.info(f"Added to history: {method} {url}")
+        except Exception as e:
+            logger.error(f"Request failed: {str(e)}")
+            self.response_panel.update_response({
+                'status': 'Error',
+                'status_text': str(e),
+                'headers': {},
+                'text': str(e)
+            })
         finally:
             # 停止加载动画
             self.loading_spinner.stop()
-
+            
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.center_loading_spinner()
@@ -197,27 +216,27 @@ class MainWindow(QMainWindow):
         self.splitter.setSizes([300, 300, total_width - 600])
 
     def show_status_message(self, message, timeout=3000):
-        """在状态栏显示消息
-        
-        Args:
-            message: 要显示的消息
-            timeout: 消息显示时间（毫秒），默认3秒
-        """
+        """在状态栏显示消息"""
+        logger.debug(f"Status message: {message}")
         self.statusBar().showMessage(message, timeout)
         
     def show_domain_dialog(self):
+        """显示域名管理对话框"""
+        logger.info("Opening domain management dialog")
         dialog = DomainDialog(self.domain_model, self)
         dialog.domain_changed.connect(self.on_domain_changed)
         dialog.exec()
         
     def on_domain_changed(self):
-        # 当域名改变时更新状态栏
+        """当域名改变时更新状态栏"""
         active_domain = self.domain_model.get_active_domain()
         if active_domain:
+            logger.info(f"Active domain changed: {active_domain['name']} ({active_domain['domain']})")
             self.statusBar().showMessage(f"Active Domain: {active_domain['name']} ({active_domain['domain']})")
         else:
+            logger.info("No active domain set")
             self.statusBar().showMessage("No active domain set")
-
+            
     def create_menu_bar(self):
         """创建菜单栏"""
         menubar = self.menuBar()
@@ -292,6 +311,7 @@ class MainWindow(QMainWindow):
 
     def show_api_list(self):
         """显示API列表"""
+        logger.debug("Switching to API list view")
         self.api_sidebar.show()
         self.history_sidebar.hide()
         self.request_panel.show()
@@ -299,6 +319,7 @@ class MainWindow(QMainWindow):
         
     def show_history(self):
         """显示历史记录"""
+        logger.debug("Switching to history view")
         self.api_sidebar.hide()
         self.history_sidebar.show()
         self.history_sidebar.refresh_history()
@@ -307,6 +328,9 @@ class MainWindow(QMainWindow):
 
     def on_history_selected(self, history_data):
         """处理历史记录选择事件"""
+        logger.info(f"Loading history: {history_data['method']} {history_data['url']}")
+        logger.debug(f"History data: {history_data}")
+        
         self.request_panel.method_combo.setCurrentText(history_data["method"])
         self.request_panel.url_input.setText(history_data["url"])
         self.request_panel.headers_input.setPlainText(json.dumps(history_data["headers"], indent=2))
