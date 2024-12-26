@@ -85,6 +85,11 @@ class MainWindow(QMainWindow):
         self.history_sidebar = HistorySideBar(self.history_model)
         self.history_sidebar.hide()  # 默认隐藏
         self.history_sidebar.history_selected.connect(self.on_history_selected)
+
+        # 创建左侧栈式布局容器
+        self.left_stack = QStackedWidget()
+        self.left_stack.addWidget(self.api_sidebar)
+        self.left_stack.addWidget(self.history_sidebar)
         
         # 创建右侧内容区域
         right_widget = QWidget()
@@ -116,12 +121,11 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(self.response_panel, stretch=2)
         
         # 添加组件到分割器
-        self.splitter.addWidget(self.api_sidebar)
-        self.splitter.addWidget(self.history_sidebar)
+        self.splitter.addWidget(self.left_stack)
         self.splitter.addWidget(right_widget)
         
         # 设置分割器的初始大小
-        self.splitter.setSizes([300, 300, 980])  # 左侧宽度300，右侧宽度980
+        self.splitter.setSizes([300, 980])  # 左侧宽度300，右侧宽度980
         
         # 创建菜单栏
         self.create_menu_bar()
@@ -213,7 +217,7 @@ class MainWindow(QMainWindow):
         super().showEvent(event)
         # 设置分割器初始大小
         total_width = self.splitter.width()
-        self.splitter.setSizes([300, 300, total_width - 600])
+        self.splitter.setSizes([300, total_width - 300])
 
     def show_status_message(self, message, timeout=3000):
         """在状态栏显示消息"""
@@ -312,8 +316,7 @@ class MainWindow(QMainWindow):
     def show_api_list(self):
         """显示API列表"""
         logger.debug("Switching to API list view")
-        self.api_sidebar.show()
-        self.history_sidebar.hide()
+        self.left_stack.setCurrentWidget(self.api_sidebar)
         self.request_panel.show()
         self.response_panel.show()
         
@@ -334,8 +337,7 @@ class MainWindow(QMainWindow):
     def show_history(self):
         """显示历史记录"""
         logger.debug("Switching to history view")
-        self.api_sidebar.hide()
-        self.history_sidebar.show()
+        self.left_stack.setCurrentWidget(self.history_sidebar)
         self.history_sidebar.refresh_history()
         self.request_panel.show()
         self.response_panel.show()
